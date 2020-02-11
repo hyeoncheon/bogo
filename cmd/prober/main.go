@@ -16,6 +16,7 @@ import (
 func main() {
 	getopt.Parse()
 	targets := getopt.Args()
+	// TODO: get it from metadata
 	run(targets)
 }
 
@@ -23,7 +24,8 @@ func run(targets []string) {
 	out := make(chan checks.PingMessage)
 	exporterLock := make(chan int)
 
-	exporter := &exporters.StdoutExporter{}
+	// exporter := &exporters.StdoutExporter{}
+	exporter := &exporters.StackdriverExporter{}
 	exporter.Initialize(out, exporterLock)
 
 	for _, t := range targets {
@@ -34,8 +36,8 @@ func run(targets []string) {
 			}(t)
 
 			for {
-				checks.Ping(t, out)
-				time.Sleep(5 * time.Second)
+				checks.Ping(t, out)          // it takes 5 to 10 secs
+				time.Sleep(25 * time.Second) // two times per minute
 			}
 		}(t)
 	}

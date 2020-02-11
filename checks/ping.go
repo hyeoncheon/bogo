@@ -9,14 +9,14 @@ import (
 )
 
 func Ping(target string, out chan PingMessage) {
-	fmt.Printf("ping: hello %v: %v\n", target, 9)
-
 	pinger, err := ping.NewPinger(target)
 	if err != nil {
 		panic(err)
 	}
 
-	pinger.Count = 3
+	pinger.Count = 5
+	pinger.Interval = 1 * time.Second
+	pinger.Timeout = 1 * time.Second
 	pinger.Run()
 	stats := pinger.Statistics()
 	fmt.Println("stat:", stats.PacketLoss, stats.IPAddr, stats.MinRtt, stats.AvgRtt, stats.MaxRtt, stats.StdDevRtt)
