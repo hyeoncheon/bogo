@@ -1,24 +1,23 @@
 package exporters
 
 import (
-	"fmt"
-	"prober/checks"
+	"prober"
 )
 
 type StdoutExporter struct {
 }
 
-func (e *StdoutExporter) Initialize(in chan checks.PingMessage, wait chan int) {
-	fmt.Printf("stdout exporter: initialize exporter...\n")
+func (e *StdoutExporter) Initialize(in chan prober.PingMessage, wait chan int) {
+	prober.Info("stdout exporter: initialize exporter...")
 	go e.run(in, wait)
 }
 
-func (e *StdoutExporter) run(in chan checks.PingMessage, wait chan int) {
-	defer fmt.Printf("stdout: bye\n")
+func (e *StdoutExporter) run(in chan prober.PingMessage, wait chan int) {
+	defer prober.Info("stdout: bye")
 
 	for {
 		s, ok := <-in
-		fmt.Printf("stdout: got a input %v, %v\n", s, ok)
+		prober.Info("stdout: got a input %v, %v", s, ok)
 		if !ok {
 			wait <- 1
 			return

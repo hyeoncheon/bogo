@@ -1,29 +1,38 @@
 package checks
 
 import (
-	"fmt"
-	"net"
 	"time"
+
+	"prober"
 
 	"github.com/sparrc/go-ping"
 )
 
-func Ping(target string, out chan PingMessage) {
+const checkPerMinute = 3
+const count = 10
+const intervalMilli = 1000
+const timeoutMilli = 1000
+
+func Ping(target string, out chan prober.PingMessage) {
 	pinger, err := ping.NewPinger(target)
 	if err != nil {
 		panic(err)
 	}
 
-	pinger.Count = 5
-	pinger.Interval = 1 * time.Second
-	pinger.Timeout = 1 * time.Second
+	pinger.Count = count
+	pinger.Interval = intervalMilli * time.Millisecond
+	pinger.Timeout = time.Duration(count)*pinger.Interval + time.Second
+
 	pinger.Run()
 	stats := pinger.Statistics()
-	fmt.Println("stat:", stats.PacketLoss, stats.IPAddr, stats.MinRtt, stats.AvgRtt, stats.MaxRtt, stats.StdDevRtt)
+	prober.Info("stat: %v %v %v %v %v %v %v %v",
+		stats.IPAddr, stats.PacketsRecv, stats.PacketsSent, stats.PacketLoss,
+		stats.MinRtt, stats.AvgRtt, stats.MaxRtt, stats.StdDevRtt)
 
-	mesg := PingMessage{
+	mesg := prober.PingMessage{
 		Addr:   stats.Addr,
 		IPAddr: stats.IPAddr,
+		Count:  stats.PacketsSent,
 		Loss:   stats.PacketLoss,
 		MinRtt: stats.MinRtt,
 		MaxRtt: stats.MaxRtt,
@@ -31,14 +40,5 @@ func Ping(target string, out chan PingMessage) {
 		StdDev: stats.StdDevRtt,
 	}
 	out <- mesg
-}
-
-type PingMessage struct {
-	Addr   string
-	IPAddr *net.IPAddr
-	Loss   float64
-	MinRtt time.Duration
-	MaxRtt time.Duration
-	AvgRtt time.Duration
-	StdDev time.Duration
+	time.Sleep((time.Minute/checkPerMinute - time.Duration(count)*pinger.Interval))
 }

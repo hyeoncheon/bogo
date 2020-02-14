@@ -3,10 +3,9 @@ package exporters
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"prober/checks"
 
-	"cloud.google.com/go/compute/metadata"
+	"prober"
+
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -22,31 +21,30 @@ type StackdriverExporter struct {
 var (
 	avgRttMs = stats.Float64("ping_avgrtt", "average rtt in milliseconds", "ms")
 	maxRttMs = stats.Float64("ping_maxrtt", "maximum rtt in milliseconds", "ms")
+	lossRate = stats.Float64("ping_loss", "packet loss rate", "%")
 )
 
-func (e *StackdriverExporter) Initialize(in chan checks.PingMessage, wait chan int) {
-	fmt.Printf("stackdriver exporter: initialize exporter...\n")
-	c := metadata.NewClient(&http.Client{Transport: userAgentTransport{
-		userAgent: "prober-exporter-stackdriver-0.0.1",
-		base:      http.DefaultTransport,
-	}})
+func (e *StackdriverExporter) Initialize(in chan prober.PingMessage, wait chan int) {
+	prober.Info("stackdriver exporter: initialize exporter...")
+	c := prober.NewMetadataClient()
+
 	var err error
 	e.instanceName, err = c.InstanceName()
 	if err != nil {
-		fmt.Printf("could not get instance name: %v", err)
+		prober.Err("could not get instance name: %v", err)
 	}
 	e.externalIP, err = c.ExternalIP()
 	if err != nil {
-		fmt.Printf("could not get external IP: %v", err)
+		prober.Err("could not get external IP: %v", err)
 	}
 	e.zone, err = c.Zone()
 	if err != nil {
-		fmt.Printf("could not get zone: %v", err)
+		prober.Err("could not get zone: %v", err)
 	}
 	go e.run(in, wait)
 }
 
-func (e *StackdriverExporter) run(in chan checks.PingMessage, wait chan int) {
+func (e *StackdriverExporter) run(in chan prober.PingMessage, wait chan int) {
 	// register stackdriver view
 	v := &view.View{
 		Name:        "ping/rtt_average",
@@ -61,7 +59,24 @@ func (e *StackdriverExporter) run(in chan checks.PingMessage, wait chan int) {
 		},
 	}
 	if err := view.Register(v); err != nil {
-		fmt.Println("could not register view:", err)
+		prober.Err("could not register view: %v", err)
+	}
+
+	// register stackdriver view
+	vLoss := &view.View{
+		Name:        "ping/packet_loss",
+		Measure:     lossRate,
+		Description: "ping packet loss rate",
+		Aggregation: view.Distribution(0, 5, 10, 50, 100),
+		TagKeys: []tag.Key{
+			tag.MustNewKey("node"),
+			tag.MustNewKey("addr"),
+			tag.MustNewKey("zone"),
+			tag.MustNewKey("target"),
+		},
+	}
+	if err := view.Register(vLoss); err != nil {
+		prober.Err("could not register view: %v", err)
 	}
 
 	// create exporter instance for stackdriver
@@ -72,16 +87,16 @@ func (e *StackdriverExporter) run(in chan checks.PingMessage, wait chan int) {
 		},
 	})
 	if err != nil {
-		fmt.Println("could not create exporter:", err)
+		prober.Err("could not create exporter: %v", err)
 	}
 	defer exporter.Flush()
 
 	if err := exporter.StartMetricsExporter(); err != nil {
-		fmt.Println("could not start metric exporter:", err)
+		prober.Err("could not start metric exporter: %v", err)
 	}
 	defer exporter.StopMetricsExporter()
 
-	defer fmt.Printf("stackdriver: bye\n")
+	defer prober.Info("stackdriver: bye")
 
 	ctx := context.Background()
 
@@ -92,25 +107,23 @@ func (e *StackdriverExporter) run(in chan checks.PingMessage, wait chan int) {
 			return
 		}
 
-		fmt.Printf("stackdriver: got a input %v, %v\n", s, ok)
-		stats.RecordWithTags(ctx, []tag.Mutator{
+		prober.Debug("stackdriver: got a input %v, %v\n", s, ok)
+		if err := stats.RecordWithTags(ctx, []tag.Mutator{
 			tag.Upsert(tag.MustNewKey("node"), e.instanceName),
 			tag.Upsert(tag.MustNewKey("addr"), e.externalIP),
 			tag.Upsert(tag.MustNewKey("zone"), e.zone),
 			tag.Upsert(tag.MustNewKey("target"), s.Addr),
-		}, avgRttMs.M(float64(s.AvgRtt.Milliseconds())))
+		}, avgRttMs.M(float64(s.AvgRtt.Milliseconds()))); err != nil {
+			prober.Err("stackdriver export: could not send rtt record")
+		}
+
+		if err := stats.RecordWithTags(ctx, []tag.Mutator{
+			tag.Upsert(tag.MustNewKey("node"), e.instanceName),
+			tag.Upsert(tag.MustNewKey("addr"), e.externalIP),
+			tag.Upsert(tag.MustNewKey("zone"), e.zone),
+			tag.Upsert(tag.MustNewKey("target"), s.Addr),
+		}, lossRate.M(s.Loss)); err != nil {
+			prober.Err("stackdriver export: could not send rtt record")
+		}
 	}
-}
-
-// from https://github.com/googleapis/google-cloud-go/blob/master/compute/metadata/examples_test.go
-// userAgentTransport sets the User-Agent header before calling base.
-type userAgentTransport struct {
-	userAgent string
-	base      http.RoundTripper
-}
-
-// RoundTrip implements the http.RoundTripper interface.
-func (t userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("User-Agent", t.userAgent)
-	return t.base.RoundTrip(req)
 }

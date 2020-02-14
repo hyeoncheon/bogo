@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
-	"time"
 
+	"prober"
 	"prober/checks"
 	"prober/exporters"
 
@@ -16,12 +16,33 @@ import (
 func main() {
 	getopt.Parse()
 	targets := getopt.Args()
-	// TODO: get it from metadata
+
+	if len(targets) == 0 {
+		prober.Err("no 'targets' from command line. checking metadata...")
+		c := prober.NewMetadataClient()
+		targetList, err := c.InstanceAttributeValue("targets")
+		if err != nil || len(targetList) == 0 {
+			prober.Err("no 'targets' in instance attributes. checking project level...")
+			targetList, err = c.ProjectAttributeValue("targets")
+			if err != nil || len(targetList) == 0 {
+				prober.Err("no 'targets' in project attributes. how can we do...")
+
+				prober.Err("no targets specified. abort!")
+				os.Exit(0)
+			}
+		}
+
+		for _, t := range strings.Split(targetList, ",") {
+			targets = append(targets, strings.TrimSpace(t))
+		}
+	}
+
+	prober.Info("starting prober for %v", targets)
 	run(targets)
 }
 
 func run(targets []string) {
-	out := make(chan checks.PingMessage)
+	out := make(chan prober.PingMessage)
 	exporterLock := make(chan int)
 
 	// exporter := &exporters.StdoutExporter{}
@@ -32,12 +53,11 @@ func run(targets []string) {
 		go func(t string) {
 			defer func(t string) {
 				v := recover()
-				fmt.Printf("panic on workder for %v! interruptted? %v\n", t, v)
+				prober.Err("panic on workder for %v! interruptted? %v", t, v)
 			}(t)
 
 			for {
-				checks.Ping(t, out)          // it takes 5 to 10 secs
-				time.Sleep(25 * time.Second) // two times per minute
+				checks.Ping(t, out) // it takes 5 to 10 secs
 			}
 		}(t)
 	}
@@ -46,10 +66,10 @@ func run(targets []string) {
 	signal.Notify(sig, os.Interrupt)
 	for {
 		s := <-sig
-		fmt.Println("signal caught:", s)
+		prober.Err("signal caught: %v", s)
 		switch s {
 		case syscall.SIGINT:
-			fmt.Println("interrupted!")
+			prober.Err("interrupted!")
 			close(out)
 		}
 		break
