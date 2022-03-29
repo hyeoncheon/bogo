@@ -1,4 +1,4 @@
-package prober
+package bogo
 
 import (
 	"fmt"
@@ -8,9 +8,11 @@ import (
 	"cloud.google.com/go/compute/metadata"
 )
 
+const Version = "v0.1.0"
+
 func NewMetadataClient() *metadata.Client {
 	return metadata.NewClient(&http.Client{Transport: userAgentTransport{
-		userAgent: "prober-0.0.2",
+		userAgent: "bogo/" + Version,
 		base:      http.DefaultTransport,
 	}})
 }

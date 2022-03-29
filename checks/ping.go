@@ -3,9 +3,9 @@ package checks
 import (
 	"time"
 
-	"prober"
+	"github.com/hyeoncheon/bogo"
 
-	"github.com/sparrc/go-ping"
+	"github.com/go-ping/ping"
 )
 
 const checkPerMinute = 3
@@ -13,7 +13,7 @@ const count = 10
 const intervalMilli = 1000
 const timeoutMilli = 1000
 
-func Ping(target string, out chan prober.PingMessage) {
+func Ping(target string, out chan bogo.PingMessage) {
 	pinger, err := ping.NewPinger(target)
 	if err != nil {
 		panic(err)
@@ -25,11 +25,11 @@ func Ping(target string, out chan prober.PingMessage) {
 
 	pinger.Run()
 	stats := pinger.Statistics()
-	prober.Info("stat: %v %v %v %v %v %v %v %v",
+	bogo.Info("stat: %v %v %v %v %v %v %v %v",
 		stats.IPAddr, stats.PacketsRecv, stats.PacketsSent, stats.PacketLoss,
 		stats.MinRtt, stats.AvgRtt, stats.MaxRtt, stats.StdDevRtt)
 
-	mesg := prober.PingMessage{
+	mesg := bogo.PingMessage{
 		Addr:   stats.Addr,
 		IPAddr: stats.IPAddr,
 		Count:  stats.PacketsSent,

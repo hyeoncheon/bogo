@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"prober"
+	"github.com/hyeoncheon/bogo"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/stats"
@@ -24,27 +24,27 @@ var (
 	lossRate = stats.Float64("ping_loss", "packet loss rate", "%")
 )
 
-func (e *StackdriverExporter) Initialize(in chan prober.PingMessage, wait chan int) {
-	prober.Info("stackdriver exporter: initialize exporter...")
-	c := prober.NewMetadataClient()
+func (e *StackdriverExporter) Initialize(in chan bogo.PingMessage, wait chan int) {
+	bogo.Info("stackdriver exporter: initialize exporter...")
+	c := bogo.NewMetadataClient()
 
 	var err error
 	e.instanceName, err = c.InstanceName()
 	if err != nil {
-		prober.Err("could not get instance name: %v", err)
+		bogo.Err("could not get instance name: %v", err)
 	}
 	e.externalIP, err = c.ExternalIP()
 	if err != nil {
-		prober.Err("could not get external IP: %v", err)
+		bogo.Err("could not get external IP: %v", err)
 	}
 	e.zone, err = c.Zone()
 	if err != nil {
-		prober.Err("could not get zone: %v", err)
+		bogo.Err("could not get zone: %v", err)
 	}
 	go e.run(in, wait)
 }
 
-func (e *StackdriverExporter) run(in chan prober.PingMessage, wait chan int) {
+func (e *StackdriverExporter) run(in chan bogo.PingMessage, wait chan int) {
 	// register stackdriver view
 	v := &view.View{
 		Name:        "ping/rtt_average",
@@ -59,7 +59,7 @@ func (e *StackdriverExporter) run(in chan prober.PingMessage, wait chan int) {
 		},
 	}
 	if err := view.Register(v); err != nil {
-		prober.Err("could not register view: %v", err)
+		bogo.Err("could not register view: %v", err)
 	}
 
 	// register stackdriver view
@@ -76,27 +76,27 @@ func (e *StackdriverExporter) run(in chan prober.PingMessage, wait chan int) {
 		},
 	}
 	if err := view.Register(vLoss); err != nil {
-		prober.Err("could not register view: %v", err)
+		bogo.Err("could not register view: %v", err)
 	}
 
 	// create exporter instance for stackdriver
 	exporter, err := stackdriver.NewExporter(stackdriver.Options{
-		MetricPrefix: "custom.googleapis.com/prober",
+		MetricPrefix: "custom.googleapis.com/bogo",
 		GetMetricDisplayName: func(v *view.View) string {
-			return fmt.Sprintf("prober/%v", v.Name)
+			return fmt.Sprintf("bogo/%v", v.Name)
 		},
 	})
 	if err != nil {
-		prober.Err("could not create exporter: %v", err)
+		bogo.Err("could not create exporter: %v", err)
 	}
 	defer exporter.Flush()
 
 	if err := exporter.StartMetricsExporter(); err != nil {
-		prober.Err("could not start metric exporter: %v", err)
+		bogo.Err("could not start metric exporter: %v", err)
 	}
 	defer exporter.StopMetricsExporter()
 
-	defer prober.Info("stackdriver: bye")
+	defer bogo.Info("stackdriver: bye")
 
 	ctx := context.Background()
 
@@ -107,23 +107,17 @@ func (e *StackdriverExporter) run(in chan prober.PingMessage, wait chan int) {
 			return
 		}
 
-		prober.Debug("stackdriver: got a input %v, %v\n", s, ok)
+		bogo.Debug("stackdriver: got a input %v, %v\n", s, ok)
 		if err := stats.RecordWithTags(ctx, []tag.Mutator{
 			tag.Upsert(tag.MustNewKey("node"), e.instanceName),
 			tag.Upsert(tag.MustNewKey("addr"), e.externalIP),
 			tag.Upsert(tag.MustNewKey("zone"), e.zone),
 			tag.Upsert(tag.MustNewKey("target"), s.Addr),
-		}, avgRttMs.M(float64(s.AvgRtt.Milliseconds()))); err != nil {
-			prober.Err("stackdriver export: could not send rtt record")
-		}
-
-		if err := stats.RecordWithTags(ctx, []tag.Mutator{
-			tag.Upsert(tag.MustNewKey("node"), e.instanceName),
-			tag.Upsert(tag.MustNewKey("addr"), e.externalIP),
-			tag.Upsert(tag.MustNewKey("zone"), e.zone),
-			tag.Upsert(tag.MustNewKey("target"), s.Addr),
-		}, lossRate.M(s.Loss)); err != nil {
-			prober.Err("stackdriver export: could not send rtt record")
+		},
+			avgRttMs.M(float64(s.AvgRtt.Milliseconds())),
+			lossRate.M(s.Loss),
+		); err != nil {
+			bogo.Err("stackdriver export: could not send ping stat")
 		}
 	}
 }

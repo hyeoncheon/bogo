@@ -1,10 +1,11 @@
-package prober
+package bogo
 
 import (
 	"net"
 	"time"
 )
 
+// PingMessage is a type specific message for ping statistics
 type PingMessage struct {
 	Addr   string
 	IPAddr *net.IPAddr
