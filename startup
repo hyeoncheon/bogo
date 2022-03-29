@@ -1,0 +1,40 @@
+#!/bin/bash
+
+metadata_base="http://metadata.google.internal/computeMetadata/v1"
+hostname=`curl -H "Metadata-Flavor: Google" $metadata_base/instance/hostname |cut -d. -f1`
+fleet=`echo $hostname |cut -d- -f1`
+tier=`echo $hostname |cut -d- -f2`
+metro=`echo $hostname |cut -d- -f3`
+
+echo "$fleet - $tier - $metro"
+
+# common: install packages
+apt update && \
+apt install -y traceroute && \
+apt install -y mtr-tiny && \
+apt install -y iputils-ping && \
+apt install -y tcpdump && \
+apt clean
+
+
+case "$fleet" in
+	tester)
+		echo "This is tester. Do nothing."
+		;;
+	prober)
+		mkdir -p /opt/prober/bin
+		curl -s http://master/prober -o /opt/prober/bin/prober
+		chmod 755 /opt/prober/bin/prober
+
+		sysctl -w net.ipv4.ping_group_range="0   2147483647"
+		echo "/opt/prober/bin/prober |logger -t prober" |at now
+		echo "reboot" |at 02:00 # time in UTC = 11:00 KST
+		# using at command as workaround for defunct
+		;;
+	*)
+		echo "could not determined my fleet. abort!"
+		exit 1
+esac
+
+echo "done"
+exit 0
