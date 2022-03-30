@@ -2,11 +2,14 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/hyeoncheon/bogo.svg)](https://pkg.go.dev/github.com/hyeoncheon/bogo)
 
-Bogo is an event collector and reporter for the Hyeoncheon project.
+Bogo is an event collector and reporter for the Hyeoncheon project.cw
 It will be a successor of Kyeong which was ruby based event collector.
+(Basically it was designed for Hyeoncheon project but currently works as
+standalone collector)
 
-Currently, it only runs on a GCE(Google Compute Engine) VM and is integrated
-with Google Cloud Monitoring. Also, only ping checker is supported.
+Currently, it only runs on a GCE(Google Compute Engine) VM when you want
+to use integrated exporter for Google Cloud Monitoring. Also, only ping
+checker is supported now.
 
 
 
@@ -18,8 +21,11 @@ with Google Cloud Monitoring. Also, only ping checker is supported.
 * exports to Google Cloud Monitoring (fka Stackdriver Monitoring)
 
 Currently, the default (not fallback) exporter is the Stackdriver exporter.
-The exported data will be found on the project's monitoring explorer and
-you can find two metrics as below:
+For using this exporter, the prober VM should runs on the GCE vm to interact
+with Google Cloud Monitoring automatically without any additional exporter
+configuration.
+
+You can find the exported metrics on the project's monitoring explorer:
 
 * `custom.googleapis.com/bogo/ping/packet_loss`
 * `custom.googleapis.com/bogo/ping/rtt_average`
@@ -46,6 +52,7 @@ by cloning this repo manually and run `go build` command.
 ### Requirement
 
 As of now, supported Go version is 1.16. (well tested, but not fully tested)
+However, it works fine with go 1.17, and I guess 1.18 also fine.
 
 
 ### Get and Build
@@ -71,14 +78,16 @@ Since Bogo runs on GCP VM, you need to configure a GCP project and VMs.
 
 ### Configure Prober VM on GCP
 
-To write the monitoring datai from VM instances, your VMs should have the
-following access scope.
+To write the monitoring data from VM instances, your VMs should have the
+following access scope. (This scope is included in the default scope so
+no additional job required if you already use the default scope.)
 
 * `https://www.googleapis.com/auth/monitoring.write`
 
 Bogo uses https://github.com/go-ping/ping and it requires running following
 command on the prober VM. I would suggest you to add the following command
-on your startup script.
+on your startup script. (See also bundled `startup` script. This script can
+be used as startup script for prober vms.)
 
 ```console
 sudo sysctl -w net.ipv4.ping_group_range="0   2147483647"
@@ -92,6 +101,7 @@ sudo sysctl -w net.ipv4.ping_group_range="0   2147483647"
 
 Currently, it does not support daemon mode. To run it in background,
 please consider the other method such as `nohup` or run by `at` command.
+(See also bundled `startup` script)
 
 ```console
 $ ./bogo www.google.com www.youtube.com
