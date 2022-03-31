@@ -1,50 +1,88 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
+	"time"
 
 	"github.com/hyeoncheon/bogo"
 	"github.com/hyeoncheon/bogo/checks"
-	"github.com/hyeoncheon/bogo/exporters"
 
 	getopt "github.com/pborman/getopt/v2"
 )
-
-type Options struct {
-	isDebug  bool
-	exporter string
-}
 
 func main() {
 	showVersion := false
 	showHelp := false
 
-	opts := &Options{
-		isDebug:  false,
-		exporter: "stackdriver",
+	opts := bogo.Options{
+		IsDebug:  false,
+		LogLevel: "info",
+		Exporter: "stackdriver",
 	}
 	getopt.SetParameters("targets...")
-	getopt.FlagLong(&opts.isDebug, "debug", 'd', "debugging mode")
-	getopt.FlagLong(&opts.exporter, "exporter", 'e', "set exporter")
+	getopt.FlagLong(&opts.IsDebug, "debug", 'd', "debugging mode")
+	getopt.FlagLong(&opts.Exporter, "exporter", 'e', "set exporter")
+	getopt.FlagLong(&opts.LogLevel, "log", 'l', "log level. (debug, info, warn, or error)")
 	getopt.FlagLong(&showVersion, "version", 'v', "show version")
 	getopt.FlagLong(&showHelp, "help", 'h', "show help message")
 
 	getopt.Parse()
 	targets := getopt.Args()
+	if opts.IsDebug {
+		opts.LogLevel = "debug"
+	}
 
 	if showVersion {
-		bogo.Info("bogo " + bogo.Version)
+		fmt.Println("bogo", bogo.Version)
 		return
 	}
 	if showHelp {
-		bogo.Info("bogo " + bogo.Version)
+		fmt.Println("bogo", bogo.Version)
 		getopt.Usage()
 		return
 	}
 
+	c, cancel := bogo.NewDefaultContext(opts)
+
+	c.Logger().Debug("targets:", targets)
+
+	ch := make(chan interface{})
+
+	keys := make([]string, 0, len(checks.Checkers))
+	for k, x := range checks.Checkers {
+		c.Logger().Debug("--- checker:", k, x)
+		c.Logger().Info("starting checker ", k, "...")
+		x.Run(c, ch)
+
+		keys = append(keys, k)
+	}
+	c.Logger().Debug("checkers:", keys)
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+
+main:
+	for {
+		select {
+		case s := <-sig:
+			c.Logger().Warnf("signal caught: %v", s)
+			cancel()
+			break main
+		case m := <-ch:
+			c.Logger().Debug("received:", m)
+		case <-time.After(500 * time.Millisecond):
+			c.Logger().Debug("nothing")
+		}
+	}
+
+	c.Logger().Debug("waiting for:", c.WG())
+	c.WG().Wait()
+}
+
+/*
 	if len(targets) == 0 {
 		bogo.Err("no 'targets' from command line. checking metadata...")
 		c := bogo.NewMetadataClient()
@@ -66,15 +104,15 @@ func main() {
 	}
 
 	bogo.Info("starting bogo for %v", targets)
-	run(opts, targets)
+	run(&opts, targets)
 }
 
-func run(opts *Options, targets []string) {
+func run(opts *bogo.Options, targets []string) {
 	out := make(chan bogo.PingMessage)
 	exporterLock := make(chan int)
 
 	var exporter bogo.PingExproter
-	switch opts.exporter {
+	switch opts.Exporter {
 	case "stackdriver":
 		exporter = &exporters.StackdriverExporter{}
 	default:
@@ -94,20 +132,5 @@ func run(opts *Options, targets []string) {
 			}
 		}(t)
 	}
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt)
-	for {
-		s := <-sig
-		bogo.Err("signal caught: %v", s)
-		switch s {
-		case syscall.SIGINT:
-			bogo.Err("interrupted!")
-			close(out)
-		}
-		break
-	}
-
-	// wait until exporter exit
-	<-exporterLock
 }
+*/
