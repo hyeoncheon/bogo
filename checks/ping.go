@@ -8,10 +8,39 @@ import (
 	"github.com/go-ping/ping"
 )
 
+const (
+	pingChecker = "ping"
+)
+
 const checkPerMinute = 3
 const count = 10
 const intervalMilli = 1000
 const timeoutMilli = 1000
+
+func (x *Checker) Pinging() error {
+	x.Name = pingChecker
+	x.Run = pingRunner
+	return nil
+}
+
+func pingRunner(c bogo.Context, out chan interface{}) error {
+	logger := c.Logger().WithField("checker", pingChecker)
+	c.WG().Add(1)
+	go func() {
+		defer c.WG().Done()
+	infinit:
+		for {
+			select {
+			case <-c.Done():
+				break infinit
+			case <-time.After(1 * time.Second):
+				out <- "ping test"
+			}
+		}
+		logger.Info("pingRunner done.")
+	}()
+	return nil
+}
 
 func Ping(target string, out chan bogo.PingMessage) {
 	pinger, err := ping.NewPinger(target)
