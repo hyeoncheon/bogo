@@ -15,6 +15,7 @@ type Context interface {
 	context.Context
 	WG() *sync.WaitGroup
 	Logger() Logger
+	GetCloudMeta(string) []string
 }
 
 // asset iplemetation
@@ -44,4 +45,8 @@ func (c DefaultContext) WG() *sync.WaitGroup {
 
 func (c *DefaultContext) Logger() Logger {
 	return c.logger
+}
+
+func (c *DefaultContext) GetCloudMeta(key string) []string {
+	return []string{"www.google.com", "ns.kornet.net"}
 }

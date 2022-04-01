@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/hyeoncheon/bogo"
@@ -9,15 +10,13 @@ import (
 )
 
 const (
-	pingChecker = "ping"
+	pingChecker         = "ping"
+	pingCheckerInterval = 30 * time.Second
+	pingInterval        = 1 * time.Second
+	pingCount           = 10
 )
 
-const checkPerMinute = 3
-const count = 10
-const intervalMilli = 1000
-const timeoutMilli = 1000
-
-func (x *Checker) Pinging() error {
+func (x *Checker) Ping() error {
 	x.Name = pingChecker
 	x.Run = pingRunner
 	return nil
@@ -25,40 +24,61 @@ func (x *Checker) Pinging() error {
 
 func pingRunner(c bogo.Context, out chan interface{}) error {
 	logger := c.Logger().WithField("checker", pingChecker)
-	c.WG().Add(1)
-	go func() {
-		defer c.WG().Done()
-	infinit:
-		for {
-			select {
-			case <-c.Done():
-				break infinit
-			case <-time.After(1 * time.Second):
-				out <- "ping test"
+
+	targets := c.GetCloudMeta("targets")
+
+	for _, h := range targets {
+		c.WG().Add(1)
+		go func(host string) {
+			defer c.WG().Done()
+			ticker := time.NewTicker(pingCheckerInterval)
+			defer ticker.Stop()
+
+			logger.Infof("%v checker for %v started.", pingChecker, host)
+		infinit:
+			for {
+				select {
+				case <-c.Done():
+					break infinit
+				case <-ticker.C:
+					if err := doPing(host, out); err != nil {
+						if err.Error() == "panic send on closed channel" {
+							logger.Warn(err)
+						} else {
+							logger.Error(err)
+						}
+					}
+				case <-time.After(checkSleep):
+				}
 			}
-		}
-		logger.Info("pingRunner done.")
-	}()
+			logger.Infof("%v checker for %v finished.", pingChecker, host)
+		}(h)
+	}
 	return nil
 }
 
-func Ping(target string, out chan bogo.PingMessage) {
+func doPing(target string, out chan interface{}) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic %v", r)
+		}
+	}()
+
 	pinger, err := ping.NewPinger(target)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	pinger.Count = count
-	pinger.Interval = intervalMilli * time.Millisecond
-	pinger.Timeout = time.Duration(count)*pinger.Interval + time.Second
+	pinger.Count = pingCount
+	pinger.Interval = pingInterval
+	pinger.Timeout = pinger.Interval*time.Duration(pingCount) + time.Second
 
-	pinger.Run()
+	if err := pinger.Run(); err != nil {
+		return err
+	}
 	stats := pinger.Statistics()
-	bogo.Info("stat: %v %v %v %v %v %v %v %v",
-		stats.IPAddr, stats.PacketsRecv, stats.PacketsSent, stats.PacketLoss,
-		stats.MinRtt, stats.AvgRtt, stats.MaxRtt, stats.StdDevRtt)
 
-	mesg := bogo.PingMessage{
+	out <- bogo.PingMessage{
 		Addr:   stats.Addr,
 		IPAddr: stats.IPAddr,
 		Count:  stats.PacketsSent,
@@ -68,6 +88,5 @@ func Ping(target string, out chan bogo.PingMessage) {
 		AvgRtt: stats.AvgRtt,
 		StdDev: stats.StdDevRtt,
 	}
-	out <- mesg
-	time.Sleep((time.Minute/checkPerMinute - time.Duration(count)*pinger.Interval))
+	return nil
 }

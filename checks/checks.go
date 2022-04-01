@@ -2,8 +2,13 @@ package checks
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/hyeoncheon/bogo"
+)
+
+const (
+	checkSleep = 100 * time.Millisecond
 )
 
 type CheckRunner func(bogo.Context, chan interface{}) error
