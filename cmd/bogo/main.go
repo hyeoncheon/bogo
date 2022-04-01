@@ -69,14 +69,22 @@ main:
 		select {
 		case s := <-sig:
 			c.Logger().Warnf("signal caught: %v", s)
-			cancel()
 			break main
 		case m := <-ch:
-			c.Logger().Debug("received:", m)
-		case <-time.After(500 * time.Millisecond):
-			c.Logger().Debug("nothing")
+			if pm, ok := m.(bogo.PingMessage); ok {
+				c.Logger().Debug("ping message:", pm)
+			} else {
+				c.Logger().Debug("received:", m)
+			}
+		case <-time.After(50 * time.Millisecond):
 		}
 	}
+	signal.Reset()
+
+	c.Logger().Debug("cancelling the main context...")
+	cancel()
+	c.Logger().Debug("closing the channel...")
+	close(ch)
 
 	c.Logger().Debug("waiting for:", c.WG())
 	c.WG().Wait()
