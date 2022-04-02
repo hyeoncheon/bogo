@@ -9,6 +9,7 @@ import (
 
 	"github.com/hyeoncheon/bogo"
 	"github.com/hyeoncheon/bogo/checks"
+	"github.com/hyeoncheon/bogo/exporters"
 	"github.com/hyeoncheon/bogo/internal/common"
 
 	getopt "github.com/pborman/getopt/v2"
@@ -87,6 +88,17 @@ func run(c common.Context, opts common.Options) {
 		x.Run(c, copts, ch)
 	}
 
+	for k, x := range exporters.Exporters {
+		if len(opts.Exporters) > 0 && !common.Contains(opts.Exporters, k) {
+			logger.Debugf("%v is not on the exporter list. skipping...", k)
+			continue
+		}
+		copts := opts.ExporterOptions[k]
+		logger.Debug("--- exporter:", k, x, copts)
+		logger.Info("starting exporter ", k, "...")
+		x.Run(c, copts, ch)
+	}
+
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 
@@ -96,13 +108,7 @@ main:
 		case s := <-sig:
 			logger.Warnf("signal caught: %v", s)
 			break main
-		case m := <-ch:
-			if pm, ok := m.(bogo.PingMessage); ok {
-				logger.Debug("ping message:", pm)
-			} else {
-				logger.Debug("received:", m)
-			}
-		case <-time.After(50 * time.Millisecond):
+		case <-time.After(500 * time.Millisecond):
 		}
 	}
 	signal.Reset()
