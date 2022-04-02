@@ -9,32 +9,37 @@ import (
 
 	"github.com/hyeoncheon/bogo"
 	"github.com/hyeoncheon/bogo/checks"
+	"github.com/hyeoncheon/bogo/internal/common"
 
 	getopt "github.com/pborman/getopt/v2"
 )
 
+// main handles all options related tasks then calls run() with the options.
 func main() {
 	showVersion := false
 	showHelp := false
+	var copts string
+	var eopts string
 
-	opts := bogo.Options{
-		IsDebug:  false,
-		LogLevel: "info",
-		Exporter: "stackdriver",
+	opts := common.Options{
+		IsDebug:   false,
+		LogLevel:  "info",
+		Checkers:  []string{},
+		Exporters: []string{"stackdriver"},
 	}
-	getopt.SetParameters("targets...")
-	getopt.FlagLong(&opts.IsDebug, "debug", 'd', "debugging mode")
-	getopt.FlagLong(&opts.Exporter, "exporter", 'e', "set exporter")
+	getopt.FlagLong(&copts, "copts", 0, "checker options")
+	getopt.FlagLong(&eopts, "eopts", 0, "exporter options")
+	getopt.FlagLong(&opts.Checkers, "checker", 'c', "set checker")
+	getopt.FlagLong(&opts.Exporters, "exporter", 'e', "set exporter")
 	getopt.FlagLong(&opts.LogLevel, "log", 'l', "log level. (debug, info, warn, or error)")
+	getopt.FlagLong(&opts.IsDebug, "debug", 'd', "debugging mode")
 	getopt.FlagLong(&showVersion, "version", 'v', "show version")
 	getopt.FlagLong(&showHelp, "help", 'h', "show help message")
 
 	getopt.Parse()
-	targets := getopt.Args()
 	if opts.IsDebug {
 		opts.LogLevel = "debug"
 	}
-
 	if showVersion {
 		fmt.Println("bogo", bogo.Version)
 		return
@@ -45,21 +50,42 @@ func main() {
 		return
 	}
 
-	c, cancel := bogo.NewDefaultContext(opts)
+	c, _ := common.NewDefaultContext(opts)
+	logger := c.Logger()
 
-	c.Logger().Debug("targets:", targets)
-
-	ch := make(chan interface{})
-
-	keys := make([]string, 0, len(checks.Checkers))
-	for k, x := range checks.Checkers {
-		c.Logger().Debug("--- checker:", k, x)
-		c.Logger().Info("starting checker ", k, "...")
-		x.Run(c, ch)
-
-		keys = append(keys, k)
+	var err error
+	opts.CheckerOptions, err = common.BuildPluginOptions(copts)
+	if err != nil {
+		logger.Fatal("could not build checker options:", err)
 	}
-	c.Logger().Debug("checkers:", keys)
+	opts.ExporterOptions, err = common.BuildPluginOptions(eopts)
+	if err != nil {
+		logger.Fatal("could not build exporter options:", err)
+	}
+
+	logger.Debug("application opts:", opts)
+	run(c, opts)
+}
+
+// run is the main thread
+func run(c common.Context, opts common.Options) {
+	logger := c.Logger()
+	if c.Meta() == nil {
+		logger.Warn("hey, it seems like I am on a legacy server or unsupported cloud!")
+	}
+
+	ch := make(chan interface{}) // communication channel for all plugins
+
+	for k, x := range checks.Checkers {
+		if len(opts.Checkers) > 0 && !common.Contains(opts.Checkers, k) {
+			logger.Debugf("%v is not on the checker list. skipping...", k)
+			continue
+		}
+		copts := opts.CheckerOptions[k]
+		logger.Debug("--- checker:", k, x, copts)
+		logger.Info("starting checker ", k, "...")
+		x.Run(c, copts, ch)
+	}
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
@@ -68,77 +94,23 @@ main:
 	for {
 		select {
 		case s := <-sig:
-			c.Logger().Warnf("signal caught: %v", s)
+			logger.Warnf("signal caught: %v", s)
 			break main
 		case m := <-ch:
 			if pm, ok := m.(bogo.PingMessage); ok {
-				c.Logger().Debug("ping message:", pm)
+				logger.Debug("ping message:", pm)
 			} else {
-				c.Logger().Debug("received:", m)
+				logger.Debug("received:", m)
 			}
 		case <-time.After(50 * time.Millisecond):
 		}
 	}
 	signal.Reset()
 
-	c.Logger().Debug("cancelling the main context...")
-	cancel()
-	c.Logger().Debug("closing the channel...")
+	logger.Debug("cancelling the main context...")
+	c.Cancel()
+	logger.Debug("closing the channel...")
 	close(ch)
-
-	c.Logger().Debug("waiting for:", c.WG())
+	logger.Debug("waiting for:", c.WG())
 	c.WG().Wait()
 }
-
-/*
-	if len(targets) == 0 {
-		bogo.Err("no 'targets' from command line. checking metadata...")
-		c := bogo.NewMetadataClient()
-		targetList, err := c.InstanceAttributeValue("targets")
-		if err != nil || len(targetList) == 0 {
-			bogo.Err("no 'targets' in instance attributes. checking project level...")
-			targetList, err = c.ProjectAttributeValue("targets")
-			if err != nil || len(targetList) == 0 {
-				bogo.Err("no 'targets' in project attributes. how can we do...")
-
-				bogo.Err("no targets specified. abort!")
-				os.Exit(0)
-			}
-		}
-
-		for _, t := range strings.Split(targetList, ",") {
-			targets = append(targets, strings.TrimSpace(t))
-		}
-	}
-
-	bogo.Info("starting bogo for %v", targets)
-	run(&opts, targets)
-}
-
-func run(opts *bogo.Options, targets []string) {
-	out := make(chan bogo.PingMessage)
-	exporterLock := make(chan int)
-
-	var exporter bogo.PingExproter
-	switch opts.Exporter {
-	case "stackdriver":
-		exporter = &exporters.StackdriverExporter{}
-	default:
-		exporter = &exporters.StdoutExporter{}
-	}
-	exporter.Initialize(out, exporterLock)
-
-	for _, t := range targets {
-		go func(t string) {
-			defer func(t string) {
-				v := recover()
-				bogo.Err("panic on workder for %v! interruptted? %v", t, v)
-			}(t)
-
-			for {
-				checks.Ping(t, out) // it takes 5 to 10 secs
-			}
-		}(t)
-	}
-}
-*/

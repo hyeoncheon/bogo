@@ -1,7 +1,8 @@
-package bogo
+package common
 
 import "github.com/sirupsen/logrus"
 
+// Logger is an interface which supports logging with fields
 type Logger interface {
 	// basic logging functions
 	Debugf(string, ...interface{})
@@ -20,10 +21,10 @@ type Logger interface {
 	WithFields(map[string]interface{}) Logger
 }
 
-// asset DefaultLogger
+// asset DefaultLogger as Logger
 var _ Logger = DefaultLogger{}
 
-// DefaultLogger based on logrus
+// DefaultLogger based on logrus.FieldLogger
 type DefaultLogger struct {
 	logrus.FieldLogger
 }

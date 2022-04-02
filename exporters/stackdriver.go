@@ -1,17 +1,6 @@
 package exporters
 
-import (
-	"context"
-	"fmt"
-
-	"github.com/hyeoncheon/bogo"
-
-	"contrib.go.opencensus.io/exporter/stackdriver"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
-)
-
+/*
 type StackdriverExporter struct {
 	instanceName string
 	externalIP   string
@@ -24,6 +13,7 @@ var (
 	lossRate = stats.Float64("ping_loss", "packet loss rate", "%")
 )
 
+/*
 func (e *StackdriverExporter) Initialize(in chan bogo.PingMessage, wait chan int) {
 	bogo.Info("stackdriver exporter: initialize exporter...")
 	c := bogo.NewMetadataClient()
@@ -121,3 +111,4 @@ func (e *StackdriverExporter) run(in chan bogo.PingMessage, wait chan int) {
 		}
 	}
 }
+*/
