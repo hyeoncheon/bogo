@@ -38,8 +38,36 @@ func NewGCEMetaClient(c Context) MetaClient {
 	return gceClient
 }
 
+// WhereAmI returns the name of CSP.
 func (m *GCEClient) WhereAmI() string {
 	return "Google"
+}
+
+// InstanceName returns the current VM's instance name string.
+func (m *GCEClient) InstanceName() string {
+	ret, err := m.Client.InstanceName()
+	if err != nil {
+		return "unknown"
+	}
+	return ret
+}
+
+// ExternalIP returns the instance's primary external (public) IP address.
+func (m *GCEClient) ExternalIP() string {
+	ret, err := m.Client.ExternalIP()
+	if err != nil {
+		return "unknown"
+	}
+	return ret
+}
+
+// Zone returns the current VM's zone, such as "asia-northeast3-a".
+func (m *GCEClient) Zone() string {
+	ret, err := m.Client.Zone()
+	if err != nil {
+		return "unknown"
+	}
+	return ret
 }
 
 func (m *GCEClient) AttributeValue(key string) string {
