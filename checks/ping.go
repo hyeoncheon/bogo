@@ -2,9 +2,11 @@ package checks
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/hyeoncheon/bogo"
+	"github.com/hyeoncheon/bogo/internal/common"
 
 	"github.com/go-ping/ping"
 )
@@ -22,19 +24,42 @@ func (x *Checker) Ping() error {
 	return nil
 }
 
-func pingRunner(c bogo.Context, out chan interface{}) error {
+func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{}) error {
 	logger := c.Logger().WithField("checker", pingChecker)
 
-	targets := c.GetCloudMeta("targets")
+	logger.Debug("ping opts: ", opts)
+
+	targets := opts["targets"]
+	if len(targets) < 1 && c.Meta() != nil {
+		targets = c.Meta().AttributeValues("targets")
+	}
+	if len(targets) < 1 {
+		logger.Error("no targets specified. abort!")
+		return fmt.Errorf("no targets specified")
+	}
+
+	checkInterval := pingCheckerInterval
+	if len(opts["check_interval"]) == 1 {
+		ci, err := strconv.Atoi(opts["check_interval"][0])
+		if err != nil {
+			logger.Error("invalid: check_interval should be a number")
+		} else {
+			checkInterval = time.Duration(ci) * time.Second
+		}
+	}
 
 	for _, h := range targets {
+		if len(h) < 1 {
+			logger.Error("target host cannot be empty")
+			continue
+		}
 		c.WG().Add(1)
 		go func(host string) {
 			defer c.WG().Done()
-			ticker := time.NewTicker(pingCheckerInterval)
+			ticker := time.NewTicker(checkInterval)
 			defer ticker.Stop()
 
-			logger.Infof("%v checker for %v started.", pingChecker, host)
+			logger.Infof("%v checker for %v started. (%v)", pingChecker, host, checkInterval)
 		infinit:
 			for {
 				select {

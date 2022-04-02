@@ -4,22 +4,25 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/hyeoncheon/bogo"
+	"github.com/hyeoncheon/bogo/internal/common"
 )
 
 const (
 	checkSleep = 100 * time.Millisecond
 )
 
-type CheckRunner func(bogo.Context, chan interface{}) error
+// Runner is a function type for plugable checkers and exporters.
+type Runner func(common.Context, common.PluginOptions, chan interface{}) error
 
+// Checker couples the name and the runner of each checker.
 type Checker struct {
 	Name string
-	Run  CheckRunner
+	Run  Runner
 }
 
 type checkers map[string]*Checker
 
+// Checkers is a map of registered checkers, is built by init().
 var Checkers = checkers{}
 
 func init() {
