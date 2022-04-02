@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// Runner is a function type for plugable checkers and exporters.
+type Runner func(Context, PluginOptions, chan interface{}) error
+
 // PluginOptions is used for CheckerOptions and ExporterOptions.
 type PluginOptions map[string][]string
 

@@ -11,13 +11,10 @@ const (
 	checkSleep = 100 * time.Millisecond
 )
 
-// Runner is a function type for plugable checkers and exporters.
-type Runner func(common.Context, common.PluginOptions, chan interface{}) error
-
 // Checker couples the name and the runner of each checker.
 type Checker struct {
 	Name string
-	Run  Runner
+	Run  common.Runner
 }
 
 type checkers map[string]*Checker
