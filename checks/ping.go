@@ -60,11 +60,11 @@ func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{
 			defer ticker.Stop()
 
 			logger.Infof("%v checker for %v started. (%v)", pingChecker, host, checkInterval)
-		infinit:
+		infinite:
 			for {
 				select {
 				case <-c.Done():
-					break infinit
+					break infinite
 				case <-ticker.C:
 					if err := doPing(host, out); err != nil {
 						if err.Error() == "panic send on closed channel" {

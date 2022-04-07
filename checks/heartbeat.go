@@ -25,11 +25,11 @@ func heartbeatRunner(c common.Context, opts common.PluginOptions, out chan inter
 		ticker := time.NewTicker(heartbeatCheckerInterval)
 		defer ticker.Stop()
 
-	infinit:
+	infinite:
 		for {
 			select {
 			case <-c.Done():
-				break infinit
+				break infinite
 			case <-ticker.C:
 				out <- "heartbeat"
 			case <-time.After(checkSleep):
