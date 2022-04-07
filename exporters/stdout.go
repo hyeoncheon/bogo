@@ -26,7 +26,7 @@ func stdoutRunner(c common.Context, opts common.PluginOptions, in chan interface
 		ticker := time.NewTicker(stdoutExporterInterval)
 		defer ticker.Stop()
 
-	infinit:
+	infinite:
 		for {
 			m, ok := <-in
 			if pm, ok := m.(bogo.PingMessage); ok {
@@ -35,7 +35,7 @@ func stdoutRunner(c common.Context, opts common.PluginOptions, in chan interface
 				logger.Infof("known: %v (%v)", m, ok)
 			}
 			if !ok {
-				break infinit
+				break infinite
 			}
 		}
 		logger.Info(stdoutExporter, " done.")

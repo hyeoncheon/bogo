@@ -1,5 +1,15 @@
 # Bogo, an event collector/reporter for Hyeoncheon.
 
+[![Test](https://github.com/hyeoncheon/bogo/actions/workflows/test.yml/badge.svg)](https://github.com/hyeoncheon/bogo/actions/workflows/test.yml)
+
+[![codecov](https://codecov.io/gh/hyeoncheon/bogo/branch/main/graph/badge.svg?token=TkcqVhww7F)](https://codecov.io/gh/hyeoncheon/bogo)
+[![Coverage Status](https://coveralls.io/repos/github/hyeoncheon/bogo/badge.svg?branch=main)](https://coveralls.io/github/hyeoncheon/bogo?branch=main)
+[![DeepSource](https://deepsource.io/gh/hyeoncheon/bogo.svg/?label=active+issues&token=suXiU-8eOt2HTIniLbcCLbq2)](https://deepsource.io/gh/hyeoncheon/bogo/?ref=repository-badge)
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/hyeoncheon/bogo)](https://goreportcard.com/report/github.com/hyeoncheon/bogo)
+[![Maintainability](https://api.codeclimate.com/v1/badges/1a36b1292948783341d0/maintainability)](https://codeclimate.com/github/hyeoncheon/bogo/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/1a36b1292948783341d0/test_coverage)](https://codeclimate.com/github/hyeoncheon/bogo/test_coverage)
+
 [![Go Reference](https://pkg.go.dev/badge/github.com/hyeoncheon/bogo.svg)](https://pkg.go.dev/github.com/hyeoncheon/bogo)
 
 Bogo is an event collector and reporter for the Hyeoncheon project.cw

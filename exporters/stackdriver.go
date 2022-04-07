@@ -84,11 +84,11 @@ func stackdriverRunner(c common.Context, opts common.PluginOptions, in chan inte
 
 		ctx := context.Background()
 
-	infinit:
+	infinite:
 		for {
 			rm, ok := <-in
 			if !ok {
-				break infinit
+				break infinite
 			}
 			if pm, ok := rm.(bogo.PingMessage); ok {
 				logger.Debugf("ping: %v", pm)
