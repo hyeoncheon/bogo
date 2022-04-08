@@ -1,3 +1,6 @@
 package bogo
 
-const Version = "v0.2.0"
+const (
+	Name    = "bogo"
+	Version = "v0.2.1"
+)

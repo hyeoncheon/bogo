@@ -51,7 +51,7 @@ func main() {
 		return
 	}
 
-	c, _ := common.NewDefaultContext(opts)
+	c, _ := common.NewDefaultContext(&opts)
 	logger := c.Logger()
 
 	var err error
@@ -65,11 +65,11 @@ func main() {
 	}
 
 	logger.Debug("application opts:", opts)
-	run(c, opts)
+	run(c, &opts)
 }
 
 // run is the main thread
-func run(c common.Context, opts common.Options) {
+func run(c common.Context, opts *common.Options) {
 	logger := c.Logger()
 	if c.Meta() == nil {
 		logger.Warn("hey, it seems like I am on a legacy server or unsupported cloud!")

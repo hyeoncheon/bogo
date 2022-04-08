@@ -10,6 +10,8 @@ import (
 	"cloud.google.com/go/compute/metadata"
 )
 
+const GOOGLE = "Google"
+
 // asset GCEClient for MetaClient iplemetations
 var _ MetaClient = &GCEClient{}
 
@@ -40,14 +42,17 @@ func NewGCEMetaClient(c Context) MetaClient {
 
 // WhereAmI returns the name of CSP.
 func (m *GCEClient) WhereAmI() string {
-	return "Google"
+	if m.Client != nil {
+		return GOOGLE
+	}
+	return NOWHERE
 }
 
 // InstanceName returns the current VM's instance name string.
 func (m *GCEClient) InstanceName() string {
 	ret, err := m.Client.InstanceName()
 	if err != nil {
-		return "unknown"
+		return UNKNOWN
 	}
 	return ret
 }
@@ -56,7 +61,7 @@ func (m *GCEClient) InstanceName() string {
 func (m *GCEClient) ExternalIP() string {
 	ret, err := m.Client.ExternalIP()
 	if err != nil {
-		return "unknown"
+		return UNKNOWN
 	}
 	return ret
 }
@@ -65,17 +70,17 @@ func (m *GCEClient) ExternalIP() string {
 func (m *GCEClient) Zone() string {
 	ret, err := m.Client.Zone()
 	if err != nil {
-		return "unknown"
+		return UNKNOWN
 	}
 	return ret
 }
 
 func (m *GCEClient) AttributeValue(key string) string {
 	value, err := m.InstanceAttributeValue(key)
-	if err != nil || len(value) == 0 {
+	if err != nil || value == "" {
 		m.logger.Debugf("no '%v' in instance attributes.", key)
 		value, err = m.ProjectAttributeValue(key)
-		if err != nil || len(value) == 0 {
+		if err != nil || value == "" {
 			m.logger.Debugf("no '%v' in project attributes.", key)
 		}
 	}
@@ -114,7 +119,7 @@ func (m *GCEClient) AttributeValues(s string) []string {
 func newGoogleCloudMetadataClient() *metadata.Client {
 	m := metadata.NewClient(&http.Client{
 		Transport: userAgentTransport{
-			userAgent: "bogo/" + bogo.Version,
+			userAgent: bogo.Name + "/" + bogo.Version,
 			base:      http.DefaultTransport,
 		},
 	})

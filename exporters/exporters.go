@@ -18,6 +18,7 @@ type exporters map[string]*Exporter
 var Exporters = exporters{}
 
 func init() {
+	/* NOTE: DUP-2356990b70031abca66a77451c35be91 */
 	o := reflect.TypeOf(&Exporter{})
 	for i := 0; i < o.NumMethod(); i++ {
 		m := o.Method(i)

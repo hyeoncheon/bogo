@@ -23,6 +23,7 @@ type checkers map[string]*Checker
 var Checkers = checkers{}
 
 func init() {
+	/* NOTE: DUP-2356990b70031abca66a77451c35be91 */
 	o := reflect.TypeOf(&Checker{})
 	for i := 0; i < o.NumMethod(); i++ {
 		m := o.Method(i)

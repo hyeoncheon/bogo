@@ -1,5 +1,10 @@
 package common
 
+const (
+	NOWHERE = "Nowhere"
+	UNKNOWN = "Unknown"
+)
+
 // MetaClient is an interface to be implemented for each cloud provider.
 type MetaClient interface {
 	WhereAmI() string

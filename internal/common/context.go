@@ -46,11 +46,11 @@ type DefaultContext struct {
 
 // NewDefaultContext creates a new DefaultContext with cancel function
 // then returns it as Context.
-func NewDefaultContext(opts Options) (Context, context.CancelFunc) {
+func NewDefaultContext(opts *Options) (Context, context.CancelFunc) {
 	c, cancel := context.WithCancel(context.Background())
 	return &DefaultContext{
 		Context: c,
-		Options: opts,
+		Options: *opts,
 		cancel:  cancel,
 		wg:      &sync.WaitGroup{},
 		logger:  NewDefaultLogger(opts.LogLevel),
