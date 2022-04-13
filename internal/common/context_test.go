@@ -11,7 +11,7 @@ import (
 func TestContext(t *testing.T) {
 	r := require.New(t)
 
-	opt := Options{}
+	opt := Options{LogLevel: "info"}
 	c, ccf := NewDefaultContext(&opt)
 	r.NotNil(c)
 	r.NotNil(ccf)
@@ -25,7 +25,7 @@ func TestContext(t *testing.T) {
 func TestContextCancel(t *testing.T) {
 	r := require.New(t)
 
-	opt := Options{}
+	opt := Options{LogLevel: "info"}
 	c, ccf := NewDefaultContext(&opt)
 	r.NotNil(c)
 	r.NotNil(ccf)
@@ -38,7 +38,7 @@ func TestContextCancel(t *testing.T) {
 func TestContextWG(t *testing.T) {
 	r := require.New(t)
 
-	opt := Options{}
+	opt := Options{LogLevel: "info"}
 	c, ccf := NewDefaultContext(&opt)
 	r.NotNil(c)
 	r.NotNil(ccf)
@@ -49,7 +49,7 @@ func TestContextWG(t *testing.T) {
 func TestContextLogger(t *testing.T) {
 	r := require.New(t)
 
-	opt := Options{}
+	opt := Options{LogLevel: "info"}
 	c, ccf := NewDefaultContext(&opt)
 	r.NotNil(c)
 	r.NotNil(ccf)
@@ -60,7 +60,7 @@ func TestContextLogger(t *testing.T) {
 func TestContextMeta(t *testing.T) {
 	r := require.New(t)
 
-	opt := Options{}
+	opt := Options{LogLevel: "info"}
 	c, ccf := NewDefaultContext(&opt)
 	r.NotNil(c)
 	r.NotNil(ccf)
