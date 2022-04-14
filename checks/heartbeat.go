@@ -24,6 +24,11 @@ func heartbeatRunner(c common.Context, opts common.PluginOptions, out chan inter
 		defer c.WG().Done()
 		ticker := time.NewTicker(heartbeatCheckerInterval)
 		defer ticker.Stop()
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Errorf("panic: %v", r)
+			}
+		}()
 
 	infinite:
 		for {
