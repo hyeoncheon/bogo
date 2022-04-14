@@ -76,6 +76,11 @@ func run(c common.Context, opts *common.Options) {
 	}
 
 	ch := make(chan interface{}) // communication channel for all plugins
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Errorf("panic: %v", r)
+		}
+	}()
 
 	for k, x := range checks.Checkers {
 		if len(opts.Checkers) > 0 && !common.Contains(opts.Checkers, k) {
