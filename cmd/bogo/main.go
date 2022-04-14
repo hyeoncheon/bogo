@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,7 +11,9 @@ import (
 	"github.com/hyeoncheon/bogo"
 	"github.com/hyeoncheon/bogo/checks"
 	"github.com/hyeoncheon/bogo/exporters"
+	"github.com/hyeoncheon/bogo/handlers"
 	"github.com/hyeoncheon/bogo/internal/common"
+	"github.com/hyeoncheon/bogo/meari"
 
 	getopt "github.com/pborman/getopt/v2"
 )
@@ -78,7 +81,7 @@ func run(c common.Context, opts *common.Options) {
 	ch := make(chan interface{}) // communication channel for all plugins
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Errorf("panic: %v", r)
+			logger.Fatalf("panic: %v", r)
 		}
 	}()
 
@@ -102,6 +105,25 @@ func run(c common.Context, opts *common.Options) {
 		logger.Debug("--- exporter:", k, x, copts)
 		logger.Info("starting exporter ", k, "...")
 		x.Run(c, copts, ch)
+	}
+
+	serverOpts := &meari.Options{
+		Logger:  logger.WithField("component", "web"),
+		Address: ":6090",
+	}
+	server := meari.New(serverOpts)
+	if server != nil {
+		for p, handler := range handlers.AllHanders() {
+			switch handler.Method {
+			case http.MethodGet:
+				server.GET(p, handler.Handler)
+			default:
+				logger.Errorf("unsupported method for %v", handler)
+			}
+		}
+		server.Start()
+	} else {
+		logger.Errorf("could not initiate web server: %v", serverOpts)
 	}
 
 	sig := make(chan os.Signal, 1)
