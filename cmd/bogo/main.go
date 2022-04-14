@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -121,9 +122,21 @@ func run(c common.Context, opts *common.Options) {
 				logger.Errorf("unsupported method for %v", handler)
 			}
 		}
-		server.Start()
+
+		c.WG().Add(1)
+		go func() {
+			defer c.WG().Done()
+
+			err := server.Start()
+
+			if err == http.ErrServerClosed {
+				logger.Info("webserver closed successfully")
+			} else {
+				logger.Error("unexpected error: ", err)
+			}
+		}()
 	} else {
-		logger.Errorf("could not initiate web server: %v", serverOpts)
+		logger.Error("could not initiate the web server: ", serverOpts)
 	}
 
 	sig := make(chan os.Signal, 1)
@@ -140,10 +153,17 @@ main:
 	}
 	signal.Reset()
 
+	logger.Info("shutting down webserver...")
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		logger.Error("could not gracefully shutdown the web server: ", err)
+	}
+
 	logger.Debug("cancelling the main context...")
 	c.Cancel()
 	logger.Debug("closing the channel...")
 	close(ch)
-	logger.Debug("waiting for:", c.WG())
+	logger.Debug("waiting for routines: ", c.WG())
 	c.WG().Wait()
 }
