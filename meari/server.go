@@ -1,6 +1,7 @@
 package meari
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -19,7 +20,8 @@ type Options struct {
 }
 
 type Server interface {
-	Start()
+	Start() error
+	Shutdown(c context.Context) error
 	GET(string, echo.HandlerFunc)
 }
 
@@ -59,12 +61,16 @@ func New(opts *Options) Server {
 	return server
 }
 
-func (s *DefaultServer) Start() {
-	go s.Echo.Start(s.Address)
+func (s *DefaultServer) Start() error {
+	return s.Echo.Start(s.Address)
+}
+
+func (s *DefaultServer) Shutdown(c context.Context) error {
+	return s.Echo.Shutdown(c)
 }
 
 func (s *DefaultServer) GET(path string, handler echo.HandlerFunc) {
-	go s.Echo.GET(path, handler)
+	s.Echo.GET(path, handler)
 }
 
 func RequestHeader(c echo.Context) string {

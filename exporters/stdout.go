@@ -32,7 +32,7 @@ func stdoutRunner(c common.Context, opts common.PluginOptions, in chan interface
 			if pm, ok := m.(bogo.PingMessage); ok {
 				logger.Infof("ping: %v", pm)
 			} else {
-				logger.Infof("known: %v (%v)", m, ok)
+				logger.Infof("unknown: %v", m)
 			}
 			if !ok {
 				break infinite
