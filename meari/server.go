@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 
 	"github.com/hyeoncheon/bogo/internal/common"
 )
@@ -50,10 +51,9 @@ func New(opts *Options) Server {
 			s.Address = opts.Address
 		}
 
+		s.Echo.Use(middleware.Logger())
+
 		s.GET("/", func(c echo.Context) error {
-			logger := c.Logger()
-			logger.Info(c.Path())
-			logger.Info(c.Request().Header)
 			return c.String(http.StatusOK, "Hey, Bulldog!")
 		})
 		server = s
