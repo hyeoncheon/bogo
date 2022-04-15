@@ -18,7 +18,7 @@ func (x *Exporter) Stdout() error {
 	return nil
 }
 
-func stdoutRunner(c common.Context, opts common.PluginOptions, in chan interface{}) error {
+func stdoutRunner(c common.Context, _ common.PluginOptions, in chan interface{}) error {
 	logger := c.Logger().WithField("exporter", stdoutExporter)
 	c.WG().Add(1)
 	go func() {

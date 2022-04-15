@@ -31,3 +31,18 @@ func init() {
 		}
 	}
 }
+
+func StartAll(c common.Context, opts *common.Options, ch chan interface{}) {
+	logger := c.Logger().WithField("module", "checker")
+
+	for k, x := range Exporters {
+		if len(opts.Exporters) > 0 && !common.Contains(opts.Exporters, k) {
+			logger.Debugf("%v is not on the exporter list. skipping...", k)
+			continue
+		}
+		copts := opts.ExporterOptions[k]
+		logger.Debug("--- exporter:", k, x, copts)
+		logger.Info("starting exporter ", k, "...")
+		x.Run(c, copts, ch)
+	}
+}

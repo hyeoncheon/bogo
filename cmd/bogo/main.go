@@ -12,7 +12,6 @@ import (
 	"github.com/hyeoncheon/bogo"
 	"github.com/hyeoncheon/bogo/checks"
 	"github.com/hyeoncheon/bogo/exporters"
-	"github.com/hyeoncheon/bogo/handlers"
 	"github.com/hyeoncheon/bogo/internal/common"
 	"github.com/hyeoncheon/bogo/meari"
 
@@ -88,59 +87,25 @@ func run(c common.Context, opts *common.Options) {
 		}
 	}()
 
-	for k, x := range checks.Checkers {
-		if len(opts.Checkers) > 0 && !common.Contains(opts.Checkers, k) {
-			logger.Debugf("%v is not on the checker list. skipping...", k)
-			continue
+	checks.StartAll(c, opts, ch)
+	exporters.StartAll(c, opts, ch)
+
+	server, err := meari.NewServer(c, opts)
+	if err != nil {
+		logger.Error("could not initiate the webserver: ", err)
+	}
+
+	c.WG().Add(1)
+	go func() {
+		defer c.WG().Done()
+
+		err := server.Start()
+		if err == http.ErrServerClosed {
+			logger.Info("webserver closed successfully")
+		} else {
+			logger.Error("unexpected error: ", err)
 		}
-		copts := opts.CheckerOptions[k]
-		logger.Debug("--- checker:", k, x, copts)
-		logger.Info("starting checker ", k, "...")
-		x.Run(c, copts, ch)
-	}
-
-	for k, x := range exporters.Exporters {
-		if len(opts.Exporters) > 0 && !common.Contains(opts.Exporters, k) {
-			logger.Debugf("%v is not on the exporter list. skipping...", k)
-			continue
-		}
-		copts := opts.ExporterOptions[k]
-		logger.Debug("--- exporter:", k, x, copts)
-		logger.Info("starting exporter ", k, "...")
-		x.Run(c, copts, ch)
-	}
-
-	serverOpts := &meari.Options{
-		Logger:  logger.WithField("component", "web"),
-		Address: opts.Address,
-	}
-	server := meari.New(serverOpts)
-	if server != nil {
-		for p, handler := range handlers.AllHanders() {
-			switch handler.Method {
-			case http.MethodGet:
-				logger.Debugf("register handler for 'GET %v'...", p)
-				server.GET(p, handler.Handler)
-			default:
-				logger.Errorf("unsupported method for %v", handler)
-			}
-		}
-
-		c.WG().Add(1)
-		go func() {
-			defer c.WG().Done()
-
-			err := server.Start()
-
-			if err == http.ErrServerClosed {
-				logger.Info("webserver closed successfully")
-			} else {
-				logger.Error("unexpected error: ", err)
-			}
-		}()
-	} else {
-		logger.Error("could not initiate the web server: ", serverOpts)
-	}
+	}()
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)

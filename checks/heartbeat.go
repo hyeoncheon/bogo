@@ -17,7 +17,7 @@ func (x *Checker) Heartbeat() error {
 	return nil
 }
 
-func heartbeatRunner(c common.Context, opts common.PluginOptions, out chan interface{}) error {
+func heartbeatRunner(c common.Context, _ common.PluginOptions, out chan interface{}) error {
 	logger := c.Logger().WithField("checker", heartbeatChecker)
 	c.WG().Add(1)
 	go func() {

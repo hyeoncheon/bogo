@@ -36,3 +36,18 @@ func init() {
 		}
 	}
 }
+
+func StartAll(c common.Context, opts *common.Options, ch chan interface{}) {
+	logger := c.Logger().WithField("module", "checker")
+
+	for k, x := range Checkers {
+		if len(opts.Checkers) > 0 && !common.Contains(opts.Checkers, k) {
+			logger.Debugf("%v is not on the checker list. skipping...", k)
+			continue
+		}
+		copts := opts.CheckerOptions[k]
+		logger.Debug("--- checker:", k, x, copts)
+		logger.Info("starting checker ", k, "...")
+		x.Run(c, copts, ch)
+	}
+}

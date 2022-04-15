@@ -36,7 +36,7 @@ var (
 	lossRate = stats.Float64("ping_loss", "packet loss rate", "%")
 )
 
-func stackdriverRunner(c common.Context, opts common.PluginOptions, in chan interface{}) error {
+func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interface{}) error {
 	logger := c.Logger().WithField("exporter", stackdriverExporter)
 
 	meta := c.Meta()
@@ -141,8 +141,5 @@ func registerViews() error {
 			tag.MustNewKey("target"),
 		},
 	}
-	if err := view.Register(vLoss); err != nil {
-		return err
-	}
-	return nil
+	return view.Register(vLoss)
 }
