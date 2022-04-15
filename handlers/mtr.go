@@ -29,7 +29,7 @@ func MtrHandler(c echo.Context) error {
 	if err != nil {
 		ret += err.Error()
 	} else {
-		ret += string(out[:])
+		ret += string(out)
 	}
 
 	return c.String(http.StatusOK, ret)
