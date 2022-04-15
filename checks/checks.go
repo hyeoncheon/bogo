@@ -47,7 +47,10 @@ func StartAll(c common.Context, opts *common.Options, ch chan interface{}) {
 		}
 		copts := opts.CheckerOptions[k]
 		logger.Debug("--- checker:", k, x, copts)
-		logger.Info("starting checker ", k, "...")
-		x.Run(c, copts, ch)
+		logger.Infof("starting checker %v...", k)
+		if err := x.Run(c, copts, ch); err != nil {
+			logger.Errorf("could not start checker %v: %v", k, err)
+			// TODO: should returns error?
+		}
 	}
 }

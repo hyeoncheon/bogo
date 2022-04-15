@@ -16,7 +16,7 @@ type Options struct {
 	// selected if this field is empty.
 	Exporters []string
 
-	// Address is a listen address for embeded webserver
+	// Address is a listen address for embedded webserver
 	Address string
 
 	CheckerOptions  map[string]PluginOptions

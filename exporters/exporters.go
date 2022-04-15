@@ -40,9 +40,12 @@ func StartAll(c common.Context, opts *common.Options, ch chan interface{}) {
 			logger.Debugf("%v is not on the exporter list. skipping...", k)
 			continue
 		}
-		copts := opts.ExporterOptions[k]
-		logger.Debug("--- exporter:", k, x, copts)
-		logger.Info("starting exporter ", k, "...")
-		x.Run(c, copts, ch)
+		eopts := opts.ExporterOptions[k]
+		logger.Debug("--- exporter:", k, x, eopts)
+		logger.Infof("starting exporter %v...", k)
+		if err := x.Run(c, eopts, ch); err != nil {
+			logger.Errorf("could not start exporter %v: %v", k, err)
+			// TODO: should returns error?
+		}
 	}
 }
