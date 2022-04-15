@@ -117,6 +117,7 @@ func run(c common.Context, opts *common.Options) {
 		for p, handler := range handlers.AllHanders() {
 			switch handler.Method {
 			case http.MethodGet:
+				logger.Debugf("register handler for 'GET %v'...", p)
 				server.GET(p, handler.Handler)
 			default:
 				logger.Errorf("unsupported method for %v", handler)
