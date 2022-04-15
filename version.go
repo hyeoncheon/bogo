@@ -2,5 +2,5 @@ package bogo
 
 const (
 	Name    = "bogo"
-	Version = "v0.3.0"
+	Version = "v0.3.1"
 )

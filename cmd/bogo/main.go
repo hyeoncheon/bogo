@@ -31,11 +31,13 @@ func main() {
 		LogLevel:  "info",
 		Checkers:  []string{},
 		Exporters: []string{"stackdriver"},
+		Address:   "127.0.0.1:6090",
 	}
 	getopt.FlagLong(&copts, "copts", 0, "checker options")
 	getopt.FlagLong(&eopts, "eopts", 0, "exporter options")
 	getopt.FlagLong(&opts.Checkers, "checker", 'c', "set checker")
 	getopt.FlagLong(&opts.Exporters, "exporter", 'e', "set exporter")
+	getopt.FlagLong(&opts.Address, "address", 'a', "webserver's listen address")
 	getopt.FlagLong(&opts.LogLevel, "log", 'l', "log level. (debug, info, warn, or error)")
 	getopt.FlagLong(&opts.IsDebug, "debug", 'd', "debugging mode")
 	getopt.FlagLong(&showVersion, "version", 'v', "show version")
@@ -110,7 +112,7 @@ func run(c common.Context, opts *common.Options) {
 
 	serverOpts := &meari.Options{
 		Logger:  logger.WithField("component", "web"),
-		Address: ":6090",
+		Address: opts.Address,
 	}
 	server := meari.New(serverOpts)
 	if server != nil {
