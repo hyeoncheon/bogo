@@ -2,8 +2,33 @@ package common
 
 import (
 	"fmt"
+	"reflect"
+	"strconv"
 	"strings"
 )
+
+type Plugin interface {
+	Name() string
+	Run(Context, PluginOptions, chan interface{}) error
+}
+
+func Plugins(t reflect.Type) []interface{} {
+	plugins := [](interface{}){}
+
+	for i := 0; i < t.NumMethod(); i++ {
+		m := t.Method(i)
+		if !strings.HasPrefix(m.Name, "Register") {
+			continue
+		}
+
+		x := reflect.New(t).Elem().Interface()
+		y := m.Func.Call([]reflect.Value{reflect.ValueOf(x)})[0].Interface()
+		//fmt.Println("plugin found:", reflect.TypeOf(y), y)
+
+		plugins = append(plugins, y)
+	}
+	return plugins
+}
 
 // Runner is a function type for plugable checkers and exporters.
 type Runner func(Context, PluginOptions, chan interface{}) error
@@ -60,6 +85,33 @@ func StringValues(s string) []string {
 	}
 	return ret
 }
+
+func (o *PluginOptions) GetValuesOr(key string, def []string) []string {
+	ret := (*o)[key]
+	if len(ret) > 0 {
+		return ret
+	}
+	return def
+}
+
+func (o *PluginOptions) GetValueOr(key string, def string) string {
+	values := o.GetValuesOr(key, []string{})
+	if len(values) > 0 {
+		return values[0]
+	}
+	return def
+}
+
+func (o *PluginOptions) GetIntegerOr(key string, def int) (int, error) {
+	value := o.GetValueOr(key, strconv.Itoa(def))
+	if ret, err := strconv.Atoi(value); err != nil {
+		return def, err
+	} else {
+		return ret, nil
+	}
+}
+
+// utilities ---
 
 // Contains checks if the given list has the given string item.
 func Contains(list []string, item string) bool {

@@ -11,10 +11,11 @@ const (
 	heartbeatCheckerInterval = 1 * time.Minute
 )
 
-func (x *Checker) Heartbeat() error {
-	x.Name = heartbeatChecker
-	x.Run = heartbeatRunner
-	return nil
+func (*Checker) RegisterHeartbeat() *Checker {
+	return &Checker{
+		name:    heartbeatChecker,
+		runFunc: heartbeatRunner,
+	}
 }
 
 func heartbeatRunner(c common.Context, _ common.PluginOptions, out chan interface{}) error {
@@ -22,8 +23,10 @@ func heartbeatRunner(c common.Context, _ common.PluginOptions, out chan interfac
 	c.WG().Add(1)
 	go func() {
 		defer c.WG().Done()
+
 		ticker := time.NewTicker(heartbeatCheckerInterval)
 		defer ticker.Stop()
+
 		defer func() {
 			if r := recover(); r != nil {
 				logger.Errorf("panic: %v", r)
@@ -40,7 +43,7 @@ func heartbeatRunner(c common.Context, _ common.PluginOptions, out chan interfac
 			case <-time.After(checkSleep):
 			}
 		}
-		logger.Info(heartbeatChecker, " done.")
+		logger.Infof("%s checker exited", heartbeatChecker)
 	}()
 	return nil
 }

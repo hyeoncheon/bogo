@@ -8,43 +8,36 @@ import (
 
 // Exporter couples the name and the runner of each exporter.
 type Exporter struct {
-	Name string
-	Run  common.Runner
+	name    string
+	runFunc common.Runner
 }
 
-type exporters map[string]*Exporter
+var _ common.Plugin = &Exporter{}
 
-// Exporters is a map of registered exporters, is built by init().
-var Exporters = exporters{}
+// Name implements common.Plugin
+func (p *Exporter) Name() string {
+	return p.name
+}
 
-func init() {
-	/* NOTE: DUP-2356990b70031abca66a77451c35be91 */
-	o := reflect.TypeOf(&Exporter{})
-	for i := 0; i < o.NumMethod(); i++ {
-		m := o.Method(i)
-
-		x := Exporter{}
-		m.Func.Call([]reflect.Value{reflect.ValueOf(&x)})
-
-		if len(x.Name) > 0 && x.Run != nil {
-			Exporters[x.Name] = &x
-		}
-	}
+// Run implements common.Plugin
+func (p *Exporter) Run(c common.Context, opts common.PluginOptions, ch chan interface{}) error {
+	return p.runFunc(c, opts, ch)
 }
 
 func StartAll(c common.Context, opts *common.Options, ch chan interface{}) {
-	logger := c.Logger().WithField("module", "checker")
+	logger := c.Logger().WithField("module", "exporter")
 
-	for k, x := range Exporters {
-		if len(opts.Exporters) > 0 && !common.Contains(opts.Exporters, k) {
-			logger.Debugf("%v is not on the exporter list. skipping...", k)
+	for _, x := range common.Plugins(reflect.TypeOf(&Exporter{})) {
+		x := x.(common.Plugin)
+		if len(opts.Exporters) > 0 && !common.Contains(opts.Exporters, x.Name()) {
+			logger.Debugf("%v is not on the exporter list. skipping...", x.Name())
 			continue
 		}
-		eopts := opts.ExporterOptions[k]
-		logger.Debug("--- exporter:", k, x, eopts)
-		logger.Infof("starting exporter %v...", k)
+		eopts := opts.ExporterOptions[x.Name()]
+		logger.Debugf("--- exporter: %s %v with %v", x.Name(), x, eopts)
+		logger.Infof("starting exporter %v...", x.Name())
 		if err := x.Run(c, eopts, ch); err != nil {
-			logger.Errorf("could not start exporter %v: %v", k, err)
+			logger.Errorf("%s exporter was aborted: %v", x.Name(), err)
 			// TODO: should returns error?
 		}
 	}

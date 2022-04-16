@@ -15,14 +15,16 @@ import (
 )
 
 const (
+	stackdriverMetricPrefix     = "custom.googleapis.com/bogo"
 	stackdriverExporter         = "stackdriver"
 	stackdriverExporterInterval = 1 * time.Minute
 )
 
-func (x *Exporter) Stackdriver() error {
-	x.Name = stackdriverExporter
-	x.Run = stackdriverRunner
-	return nil
+func (*Exporter) RegisterStackdriver() *Exporter {
+	return &Exporter{
+		name:    stackdriverExporter,
+		runFunc: stackdriverRunner,
+	}
 }
 
 type reporter struct {
@@ -39,50 +41,30 @@ var (
 func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interface{}) error {
 	logger := c.Logger().WithField("exporter", stackdriverExporter)
 
-	meta := c.Meta()
-	if meta == nil || meta.WhereAmI() != "Google" {
-		logger.Error("could not get Google Cloud meta client!")
-		return fmt.Errorf("count not get Google Cloud metadata client")
-		// TODO: need to implement remote reporting
+	r, err := getReporter(c)
+	if err != nil {
+		return err
 	}
 
-	r := &reporter{
-		instanceName: meta.InstanceName(),
-		externalIP:   meta.ExternalIP(),
-		zone:         meta.Zone(),
+	if err := registerViews(); err != nil {
+		return fmt.Errorf("could not register views: %v", err)
+	}
+
+	exporter, err := createAndStartExporter()
+	if err != nil {
+		return err
 	}
 
 	c.WG().Add(1)
 	go func() {
 		defer c.WG().Done()
+
 		ticker := time.NewTicker(stackdriverExporterInterval)
 		defer ticker.Stop()
 
-		if err := registerViews(); err != nil {
-			logger.Error("could not register views:", err)
-			return
-		}
-
-		// create exporter instance for stackdriver
-		exporter, err := stackdriver.NewExporter(stackdriver.Options{
-			MetricPrefix: "custom.googleapis.com/bogo",
-			GetMetricDisplayName: func(v *view.View) string {
-				return fmt.Sprintf("bogo/%v", v.Name)
-			},
-		})
-		if err != nil {
-			logger.Errorf("could not create exporter: %v", err)
-			return
-		}
+		// defer for exporter
 		defer exporter.Flush()
-
-		if err := exporter.StartMetricsExporter(); err != nil {
-			logger.Errorf("could not start metric exporter: %v", err)
-			return
-		}
 		defer exporter.StopMetricsExporter()
-
-		ctx := context.Background()
 
 	infinite:
 		for {
@@ -90,26 +72,33 @@ func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interfa
 			if !ok {
 				break infinite
 			}
+
 			if pm, ok := rm.(bogo.PingMessage); ok {
 				logger.Debugf("ping: %v", pm)
-				if err := stats.RecordWithTags(ctx, []tag.Mutator{
-					tag.Upsert(tag.MustNewKey("node"), r.instanceName),
-					tag.Upsert(tag.MustNewKey("addr"), r.externalIP),
-					tag.Upsert(tag.MustNewKey("zone"), r.zone),
-					tag.Upsert(tag.MustNewKey("target"), pm.Addr),
-				},
-					avgRttMs.M(float64(pm.AvgRtt.Milliseconds())),
-					lossRate.M(pm.Loss),
-				); err != nil {
-					logger.Error("could not send ping stat:", err)
+				if err := recordPingMessage(r, &pm); err != nil {
+					logger.Errorf("message %v: %v", pm, err)
 				}
 			} else {
-				logger.Infof("known: %v (%v)", rm, ok)
+				logger.Warnf("unknown: %v", rm)
 			}
 		}
-		logger.Info(stackdriverExporter, " done.")
+		logger.Infof("%s exporter exited", stackdriverExporter)
 	}()
 	return nil
+}
+
+func getReporter(c common.Context) (*reporter, error) {
+	// currently, stackdriver exporter is only suppored on the GCE instance
+	meta := c.Meta()
+	if meta == nil || meta.WhereAmI() != "Google" {
+		return nil, fmt.Errorf("not on the Google Compute Engine")
+	}
+
+	return &reporter{
+		instanceName: meta.InstanceName(),
+		externalIP:   meta.ExternalIP(),
+		zone:         meta.Zone(),
+	}, nil
 }
 
 func registerViews() error {
@@ -142,4 +131,38 @@ func registerViews() error {
 		},
 	}
 	return view.Register(vLoss)
+}
+
+func createAndStartExporter() (*stackdriver.Exporter, error) {
+	// create exporter instance for stackdriver
+	exporter, err := stackdriver.NewExporter(stackdriver.Options{
+		MetricPrefix: stackdriverMetricPrefix,
+		GetMetricDisplayName: func(v *view.View) string {
+			return fmt.Sprintf("bogo/%v", v.Name)
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not create exporter: %v", err)
+	}
+
+	if err := exporter.StartMetricsExporter(); err != nil {
+		return nil, fmt.Errorf("could not start metric exporter: %v", err)
+	}
+	return exporter, nil
+}
+
+func recordPingMessage(r *reporter, m *bogo.PingMessage) error {
+	if err := stats.RecordWithTags(context.Background(),
+		[]tag.Mutator{
+			tag.Upsert(tag.MustNewKey("node"), r.instanceName),
+			tag.Upsert(tag.MustNewKey("addr"), r.externalIP),
+			tag.Upsert(tag.MustNewKey("zone"), r.zone),
+			tag.Upsert(tag.MustNewKey("target"), m.Addr),
+		},
+		avgRttMs.M(float64(m.AvgRtt.Milliseconds())),
+		lossRate.M(m.Loss),
+	); err != nil {
+		return fmt.Errorf("could not send ping stat: %v", err)
+	}
+	return nil
 }

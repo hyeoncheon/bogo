@@ -1,4 +1,4 @@
 
 
 lint:
-	-golangci-lint run -E gocognit,gocyclo,misspell
+	golangci-lint run -E gocognit,gocyclo,misspell --tests=false

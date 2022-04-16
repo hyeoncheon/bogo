@@ -2,7 +2,6 @@ package checks
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/hyeoncheon/bogo"
@@ -12,54 +11,53 @@ import (
 )
 
 const (
-	pingChecker         = "ping"
-	pingCheckerInterval = 30 * time.Second
-	pingInterval        = 1 * time.Second
-	pingCount           = 10
+	pingChecker            = "ping"
+	pingCheckerIntervalSec = 30
+	pingIntervalSec        = 1
+	pingCount              = 10
 )
 
-func (x *Checker) Ping() error {
-	x.Name = pingChecker
-	x.Run = pingRunner
-	return nil
+func (*Checker) RegisterPing() *Checker {
+	return &Checker{
+		name:    pingChecker,
+		runFunc: pingRunner,
+	}
 }
 
 func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{}) error {
 	logger := c.Logger().WithField("checker", pingChecker)
-
 	logger.Debug("ping opts: ", opts)
 
-	targets := opts["targets"]
+	// setup ping parameters
+	targets := opts.GetValuesOr("targets", []string{})
 	if len(targets) < 1 && c.Meta() != nil {
 		targets = c.Meta().AttributeValues("targets")
 	}
 	if len(targets) < 1 {
-		logger.Error("no targets specified. abort!")
 		return fmt.Errorf("no targets specified")
 	}
 
-	checkInterval := pingCheckerInterval
-	if len(opts["check_interval"]) == 1 {
-		ci, err := strconv.Atoi(opts["check_interval"][0])
-		if err != nil {
-			logger.Error("invalid: check_interval should be a number")
-		} else {
-			checkInterval = time.Duration(ci) * time.Second
+	for _, t := range targets {
+		if len(t) < 1 {
+			return fmt.Errorf("target string should not be empty: %v", targets)
 		}
 	}
 
+	checkInterval, err := opts.GetIntegerOr("check_interval", pingCheckerIntervalSec)
+	if err != nil {
+		return fmt.Errorf("invalid check_interval value")
+	}
+
+	// spawn ping workers for each target
 	for _, h := range targets {
-		if len(h) < 1 {
-			logger.Error("target host cannot be empty")
-			continue
-		}
 		c.WG().Add(1)
 		go func(host string) {
 			defer c.WG().Done()
-			ticker := time.NewTicker(checkInterval)
+
+			ticker := time.NewTicker(time.Duration(checkInterval) * time.Second)
 			defer ticker.Stop()
 
-			logger.Infof("%v checker for %v started. (%v)", pingChecker, host, checkInterval)
+			logger.Infof("%s %s every %ds", pingChecker, host, checkInterval)
 		infinite:
 			for {
 				select {
@@ -67,7 +65,7 @@ func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{
 					break infinite
 				case <-ticker.C:
 					if err := doPing(host, out); err != nil {
-						if err.Error() == "panic send on closed channel" {
+						if err.Error() == "panic: send on closed channel" {
 							logger.Warn(err)
 						} else {
 							logger.Error(err)
@@ -76,16 +74,20 @@ func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{
 				case <-time.After(checkSleep):
 				}
 			}
-			logger.Infof("%v checker for %v finished.", pingChecker, host)
+			logger.Infof("%s checker for %s exited", pingChecker, host)
 		}(h)
 	}
 	return nil
 }
 
+// doPing runs a single turn of ping test for the given target with fixed
+// configuration, then send the result to the given channel.
 func doPing(target string, out chan interface{}) (err error) {
 	defer func() {
+		// NOTE: mainly for "send on closed channel"
+		// could it be prevented by closing the channel after all checkers?
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic %v", r)
+			err = fmt.Errorf("panic: %v", r)
 		}
 	}()
 
@@ -95,7 +97,7 @@ func doPing(target string, out chan interface{}) (err error) {
 	}
 
 	pinger.Count = pingCount
-	pinger.Interval = pingInterval
+	pinger.Interval = pingIntervalSec * time.Second
 	pinger.Timeout = pinger.Interval*time.Duration(pingCount) + time.Second
 
 	if err := pinger.Run(); err != nil {
