@@ -2,10 +2,30 @@ package common
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestPlugins(t *testing.T) {
+	r := require.New(t)
+
+	plugins := Plugins(reflect.TypeOf(&Plugger{}))
+	r.IsType([]interface{}{}, plugins)
+	r.NotEmpty(plugins)
+	r.Equal(2, len(plugins))
+
+	e1 := plugins[0].(Plugin)
+	r.IsType(&Plugger{}, e1)
+	r.Equal("dummy", e1.Name())
+	r.Nil(e1.Run(nil, nil, nil))
+
+	e2 := plugins[1].(Plugin)
+	r.IsType(&Plugger{}, e2)
+	r.Equal("mummy", e2.Name())
+	r.Error(e2.Run(nil, nil, nil))
+}
 
 func TestBuildPluginOptions(t *testing.T) {
 	r := require.New(t)
@@ -120,4 +140,39 @@ func TestContains(t *testing.T) {
 	r.True(Contains(list, "hey"))
 	r.True(Contains(list, "bulldog"))
 	r.False(Contains(list, "hotdog"))
+}
+
+func TestGetValue(t *testing.T) {
+	r := require.New(t)
+
+	opts := PluginOptions{
+		"value1":  []string{"one"},
+		"value2":  []string{"first", "second"},
+		"value3":  []string{"6090"},
+		"invalid": []string{"bogo"},
+	}
+
+	val1 := opts.GetValueOr("value1", "default")
+	r.Equal("one", val1)
+
+	val1 = opts.GetValueOr("none", "default")
+	r.Equal("default", val1)
+
+	val2 := opts.GetValuesOr("value2", []string{"default"})
+	r.Equal([]string{"first", "second"}, val2)
+
+	val2 = opts.GetValuesOr("none", []string{"default"})
+	r.Equal([]string{"default"}, val2)
+
+	val3, err := opts.GetIntegerOr("value3", 8080)
+	r.NoError(err)
+	r.Equal(6090, val3)
+
+	val3, err = opts.GetIntegerOr("none", 8080)
+	r.NoError(err)
+	r.Equal(8080, val3)
+
+	val3, err = opts.GetIntegerOr("invalid", 8080)
+	r.Error(err)
+	r.Equal(8080, val3)
 }

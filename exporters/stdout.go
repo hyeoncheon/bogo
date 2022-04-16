@@ -12,10 +12,11 @@ const (
 	stdoutExporterInterval = 1 * time.Minute
 )
 
-func (x *Exporter) Stdout() error {
-	x.Name = stdoutExporter
-	x.Run = stdoutRunner
-	return nil
+func (*Exporter) RegisterStdout() *Exporter {
+	return &Exporter{
+		name:    stdoutExporter,
+		runFunc: stdoutRunner,
+	}
 }
 
 func stdoutRunner(c common.Context, _ common.PluginOptions, in chan interface{}) error {
@@ -23,22 +24,24 @@ func stdoutRunner(c common.Context, _ common.PluginOptions, in chan interface{})
 	c.WG().Add(1)
 	go func() {
 		defer c.WG().Done()
+
 		ticker := time.NewTicker(stdoutExporterInterval)
 		defer ticker.Stop()
 
 	infinite:
 		for {
 			m, ok := <-in
-			if pm, ok := m.(bogo.PingMessage); ok {
-				logger.Infof("ping: %v", pm)
-			} else {
-				logger.Infof("unknown: %v", m)
-			}
 			if !ok {
 				break infinite
 			}
+
+			if pm, ok := m.(bogo.PingMessage); ok {
+				logger.Infof("ping: %v", pm)
+			} else {
+				logger.Warnf("unknown: %v", m)
+			}
 		}
-		logger.Info(stdoutExporter, " done.")
+		logger.Infof("%s exporter exited", stdoutExporter)
 	}()
 	return nil
 }
