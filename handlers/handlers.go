@@ -12,7 +12,7 @@ type Handler struct {
 	Handler echo.HandlerFunc
 }
 
-func AllHanders() map[string]Handler {
+func AllHandlers() map[string]Handler {
 	handlers := map[string]Handler{}
 
 	o := reflect.TypeOf(&Handler{})

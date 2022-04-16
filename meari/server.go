@@ -36,7 +36,7 @@ func NewServer(c common.Context, opts *common.Options) (Server, error) {
 		return nil, fmt.Errorf("could not initiate the web server: %v", serverOpts)
 	}
 
-	for p, handler := range handlers.AllHanders() {
+	for p, handler := range handlers.AllHandlers() {
 		switch handler.Method {
 		case http.MethodGet:
 			logger.Debugf("register handler for 'GET %v'...", p)
