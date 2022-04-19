@@ -11,14 +11,13 @@ import (
 	"github.com/hyeoncheon/bogo/internal/common"
 )
 
-const DefaultAddress = "127.0.0.1:6090"
-
 type Options struct {
 	Logger  common.Logger
 	Address string
 }
 
 type Server interface {
+	Address() string
 	Start() error
 	Shutdown(c context.Context) error
 	GET(string, echo.HandlerFunc)

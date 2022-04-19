@@ -5,16 +5,17 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/hyeoncheon/bogo/internal/defaults"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-type DefaultServer struct {
+type defaultServer struct {
 	*echo.Echo
-	Address string
+	address string
 }
 
-var _ Server = &DefaultServer{}
+var _ Server = &defaultServer{}
 
 var (
 	serverOnce sync.Once
@@ -23,15 +24,15 @@ var (
 
 func NewDefaultServer(opts *Options) Server {
 	serverOnce.Do(func() {
-		s := &DefaultServer{
+		s := &defaultServer{
 			Echo:    echo.New(),
-			Address: DefaultAddress,
+			address: defaults.ServerAddress,
 		}
 		s.Echo.HideBanner = true
 		s.Echo.Debug = true
 
 		if opts.Address != "" {
-			s.Address = opts.Address
+			s.address = opts.Address
 		}
 
 		s.Echo.Use(middleware.Logger())
@@ -44,14 +45,18 @@ func NewDefaultServer(opts *Options) Server {
 	return server
 }
 
-func (s *DefaultServer) Start() error {
-	return s.Echo.Start(s.Address)
+func (s *defaultServer) Address() string {
+	return s.address
 }
 
-func (s *DefaultServer) Shutdown(c context.Context) error {
+func (s *defaultServer) Start() error {
+	return s.Echo.Start(s.address)
+}
+
+func (s *defaultServer) Shutdown(c context.Context) error {
 	return s.Echo.Shutdown(c)
 }
 
-func (s *DefaultServer) GET(path string, handler echo.HandlerFunc) {
+func (s *defaultServer) GET(path string, handler echo.HandlerFunc) {
 	s.Echo.GET(path, handler)
 }

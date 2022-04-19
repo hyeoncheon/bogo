@@ -30,7 +30,7 @@ func TestNewGCEMetaClient_SimGCE(t *testing.T) {
 		return true
 	}
 
-	m := NewGCEMetaClient(&DefaultContext{})
+	m := NewGCEMetaClient(&defaultContext{})
 	r.IsType((*GCEClient)(nil), m)
 	r.Implements((*MetaClient)(nil), m)
 
@@ -56,7 +56,7 @@ func TestNewGCEMetaClient_NoGCE(t *testing.T) {
 		return false
 	}
 
-	m := NewGCEMetaClient(&DefaultContext{})
+	m := NewGCEMetaClient(&defaultContext{})
 	r.Nil(m)
 
 	// actually this could be separated test but just keep it here

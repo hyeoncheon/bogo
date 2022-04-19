@@ -5,24 +5,6 @@ import (
 	"sync"
 )
 
-// Options is a struct to store command line options
-type Options struct {
-	IsDebug  bool
-	LogLevel string
-	// Checkers constains selected checkers. All available checkers will be
-	// selected if this field is empty.
-	Checkers []string
-	// Exporters contains selected exporters. All available exporters will be
-	// selected if this field is empty.
-	Exporters []string
-
-	// Address is a listen address for embedded webserver
-	Address string
-
-	CheckerOptions  map[string]PluginOptions
-	ExporterOptions map[string]PluginOptions
-}
-
 // Context is the main application context for whole components
 // This context will be used to control go routines.
 type Context interface {
@@ -34,11 +16,11 @@ type Context interface {
 }
 
 // asset DefautContext for Context iplemetations
-var _ Context = &DefaultContext{}
-var _ context.Context = &DefaultContext{}
+var _ Context = &defaultContext{}
+var _ context.Context = &defaultContext{}
 
-// DefaultContext is the default context for bogo app.
-type DefaultContext struct {
+// defaultContext is the default context for bogo app.
+type defaultContext struct {
 	context.Context
 	Options
 	cancel context.CancelFunc
@@ -51,7 +33,7 @@ type DefaultContext struct {
 // then returns it as Context.
 func NewDefaultContext(opts *Options) (Context, context.CancelFunc) {
 	c, cancel := context.WithCancel(context.Background())
-	return &DefaultContext{
+	return &defaultContext{
 		Context: c,
 		Options: *opts,
 		cancel:  cancel,
@@ -61,21 +43,21 @@ func NewDefaultContext(opts *Options) (Context, context.CancelFunc) {
 	}, cancel
 }
 
-func (c *DefaultContext) Cancel() {
+func (c *defaultContext) Cancel() {
 	c.cancel()
 }
 
-func (c *DefaultContext) WG() *sync.WaitGroup {
+func (c *defaultContext) WG() *sync.WaitGroup {
 	return c.wg
 }
 
-func (c *DefaultContext) Logger() Logger {
+func (c *defaultContext) Logger() Logger {
 	return c.logger
 }
 
 // Meta returns the context's metadata client. If the meta is nil, it will
 // try to create a new one. Currently only GCE is supported.
-func (c *DefaultContext) Meta() MetaClient {
+func (c *defaultContext) Meta() MetaClient {
 	if c.meta == nil {
 		c.meta = NewGCEMetaClient(c)
 	}
