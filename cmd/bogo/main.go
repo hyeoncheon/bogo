@@ -25,13 +25,8 @@ func main() {
 	var copts string
 	var eopts string
 
-	opts := common.Options{
-		IsDebug:   false,
-		LogLevel:  "info",
-		Checkers:  []string{},
-		Exporters: []string{"stackdriver"},
-		Address:   "127.0.0.1:6090",
-	}
+	opts := common.DefaultOptions()
+
 	getopt.FlagLong(&copts, "copts", 0, "checker options")
 	getopt.FlagLong(&eopts, "eopts", 0, "exporter options")
 	getopt.FlagLong(&opts.Checkers, "checker", 'c', "set checker")
