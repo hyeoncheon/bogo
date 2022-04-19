@@ -10,6 +10,7 @@ import (
 type Context interface {
 	context.Context
 	Cancel()
+	Channel() chan interface{}
 	WG() *sync.WaitGroup
 	Logger() Logger
 	Meta() MetaClient
@@ -24,6 +25,7 @@ type defaultContext struct {
 	context.Context
 	Options
 	cancel context.CancelFunc
+	ch     chan interface{}
 	wg     *sync.WaitGroup
 	logger Logger
 	meta   MetaClient
@@ -37,14 +39,26 @@ func NewDefaultContext(opts *Options) (Context, context.CancelFunc) {
 		Context: c,
 		Options: *opts,
 		cancel:  cancel,
+		ch:      make(chan interface{}, 10),
 		wg:      &sync.WaitGroup{},
 		logger:  NewDefaultLogger(opts.LogLevel),
 		meta:    nil,
 	}, cancel
 }
 
+func (c *defaultContext) Channel() chan interface{} {
+	return c.ch
+}
+
 func (c *defaultContext) Cancel() {
+	c.Logger().Debug("cancelling the main context...")
 	c.cancel()
+
+	c.Logger().Debug("waiting for routines: ", c.wg, "...")
+	c.wg.Wait()
+
+	c.Logger().Debug("closing communication channel...")
+	close(c.ch)
 }
 
 func (c *defaultContext) WG() *sync.WaitGroup {

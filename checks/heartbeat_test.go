@@ -21,51 +21,49 @@ func TestHeartbeatRunner(t *testing.T) {
 	r := require.New(t)
 
 	opts := common.DefaultOptions()
-	c, cancel := common.NewDefaultContext(&opts)
-	ch := make(chan interface{})
+	c, _ := common.NewDefaultContext(&opts)
 
 	o := common.PluginOptions{
 		"interval": []string{"1"},
 	}
 
-	r.NoError(heartbeatRunner(c, o, ch))
-	get := <-ch
+	r.NoError(heartbeatRunner(c, o, c.Channel()))
+	get := <-c.Channel()
 	r.NotNil(get)
 	r.Equal("heartbeat", get.(string))
-	cancel()
 
-	c.WG().Wait()
+	c.Cancel()
 }
 
+/* chnaged the shutdown handling gracefully
 func TestHeartbeatRunner_Panic(t *testing.T) {
 	r := require.New(t)
 
 	opts := common.DefaultOptions()
-	c, cancel := common.NewDefaultContext(&opts)
-	defer cancel()
-	ch := make(chan interface{})
+	c, _ := common.NewDefaultContext(&opts)
 
 	o := common.PluginOptions{
 		"interval": []string{"1"},
 	}
 
-	r.NoError(heartbeatRunner(c, o, ch))
-	close(ch)
+	r.NoError(heartbeatRunner(c, o, c.Channel()))
+	close(c.Channel())
 
-	c.WG().Wait()
+	c.Cancel()
 }
+*/
 
 func TestHeartbeatRunner_WrongOption(t *testing.T) {
 	r := require.New(t)
 
 	opts := common.DefaultOptions()
 	c, _ := common.NewDefaultContext(&opts)
-	ch := make(chan interface{})
+	defer c.Cancel()
 
 	o := common.PluginOptions{
 		"interval": []string{"number"},
 	}
 
-	err := heartbeatRunner(c, o, ch)
+	err := heartbeatRunner(c, o, c.Channel())
 	r.ErrorContains(err, "invalid option value")
 }
