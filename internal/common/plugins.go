@@ -94,7 +94,7 @@ func (o *PluginOptions) GetValuesOr(key string, def []string) []string {
 	return def
 }
 
-func (o *PluginOptions) GetValueOr(key string, def string) string {
+func (o *PluginOptions) GetValueOr(key, def string) string {
 	values := o.GetValuesOr(key, []string{})
 	if len(values) > 0 {
 		return values[0]

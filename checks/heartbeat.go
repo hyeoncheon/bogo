@@ -1,14 +1,15 @@
 package checks
 
 import (
+	"errors"
 	"time"
 
 	"github.com/hyeoncheon/bogo/internal/common"
 )
 
 const (
-	heartbeatChecker         = "heartbeat"
-	heartbeatCheckerInterval = 1 * time.Minute
+	heartbeatChecker            = "heartbeat"
+	heartbeatCheckerIntervalSec = 60
 )
 
 func (*Checker) RegisterHeartbeat() *Checker {
@@ -18,13 +19,19 @@ func (*Checker) RegisterHeartbeat() *Checker {
 	}
 }
 
-func heartbeatRunner(c common.Context, _ common.PluginOptions, out chan interface{}) error {
+func heartbeatRunner(c common.Context, opts common.PluginOptions, out chan interface{}) error {
 	logger := c.Logger().WithField("checker", heartbeatChecker)
+
+	interval, err := opts.GetIntegerOr("interval", heartbeatCheckerIntervalSec)
+	if err != nil {
+		return errors.New("invalid option value: interval")
+	}
+
 	c.WG().Add(1)
 	go func() {
 		defer c.WG().Done()
 
-		ticker := time.NewTicker(heartbeatCheckerInterval)
+		ticker := time.NewTicker(time.Duration(interval) * time.Second)
 		defer ticker.Stop()
 
 		defer func() {
