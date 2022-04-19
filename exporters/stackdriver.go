@@ -68,18 +68,22 @@ func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interfa
 
 	infinite:
 		for {
-			rm, ok := <-in
-			if !ok {
-				break infinite
-			}
-
-			if pm, ok := rm.(bogo.PingMessage); ok {
-				logger.Debugf("ping: %v", pm)
-				if err := recordPingMessage(r, &pm); err != nil {
-					logger.Errorf("message %v: %v", pm, err)
+			select {
+			case m, ok := <-in:
+				if !ok {
+					break infinite
 				}
-			} else {
-				logger.Warnf("unknown: %v", rm)
+
+				if pm, ok := m.(bogo.PingMessage); ok {
+					logger.Debugf("ping: %v", pm)
+					if err := recordPingMessage(r, &pm); err != nil {
+						logger.Errorf("message %v: %v", pm, err)
+					}
+				} else {
+					logger.Warnf("unknown: %v", m)
+				}
+			case <-c.Done():
+				break infinite
 			}
 		}
 		logger.Infof("%s exporter exited", stackdriverExporter)

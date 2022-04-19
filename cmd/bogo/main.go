@@ -75,15 +75,14 @@ func run(c common.Context, opts *common.Options) {
 		logger.Warn("hey, it seems like I am on a legacy server or unsupported cloud!")
 	}
 
-	ch := make(chan interface{}) // communication channel for all plugins
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Fatalf("panic: %v", r)
 		}
 	}()
 
-	checks.StartAll(c, opts, ch)
-	exporters.StartAll(c, opts, ch)
+	checks.StartAll(c, opts, c.Channel())
+	exporters.StartAll(c, opts, c.Channel())
 
 	server, err := meari.NewServer(c, opts)
 	if err != nil {
@@ -123,10 +122,5 @@ main:
 		logger.Error("could not gracefully shutdown the web server: ", err)
 	}
 
-	logger.Debug("cancelling the main context...")
 	c.Cancel()
-	logger.Debug("closing the channel...")
-	close(ch)
-	logger.Debug("waiting for routines: ", c.WG())
-	c.WG().Wait()
 }

@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hyeoncheon/bogo/internal/common"
@@ -9,7 +10,6 @@ import (
 
 func TestStartAll(t *testing.T) {
 	r := require.New(t)
-	r.Nil(nil)
 
 	opts := common.DefaultOptions()
 	opts.Checkers = []string{"heartbeat"}
@@ -19,23 +19,17 @@ func TestStartAll(t *testing.T) {
 		},
 	}
 	ctx, _ := common.NewDefaultContext(&opts)
+	defer ctx.Cancel()
 
-	ch := make(chan interface{})
-	defer close(ch)
+	StartAll(ctx, &opts, ctx.Channel())
 
-	StartAll(ctx, &opts, ch)
-
-	out := <-ch
+	out := <-ctx.Channel()
 	r.NotNil(out)
 	r.Equal("heartbeat", out.(string))
-
-	ctx.Cancel()
-	ctx.WG().Wait()
 }
 
 func TestStartAll_Error(t *testing.T) {
 	r := require.New(t)
-	r.Nil(nil)
 
 	opts := common.DefaultOptions()
 	opts.Checkers = []string{"heartbeat"}
@@ -45,12 +39,8 @@ func TestStartAll_Error(t *testing.T) {
 		},
 	}
 	ctx, _ := common.NewDefaultContext(&opts)
+	defer ctx.Cancel()
 
-	ch := make(chan interface{})
-	defer close(ch)
-
-	StartAll(ctx, &opts, ch)
-
-	ctx.Cancel()
-	ctx.WG().Wait()
+	StartAll(ctx, &opts, ctx.Channel())
+	r.Equal("--- &{{} [0 0 0]}", fmt.Sprintf("--- %v", ctx.WG()))
 }

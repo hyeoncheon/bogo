@@ -59,14 +59,12 @@ func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{
 				case <-c.Done():
 					break infinite
 				case <-ticker.C:
-					if err := doPing(host, pingInterval, out); err != nil {
-						if err.Error() == "panic: send on closed channel" {
-							logger.Warn(err)
-						} else {
-							logger.Error(err)
-						}
+					m, err := doPing(host, pingInterval)
+					if err != nil {
+						logger.Error(err)
 						break infinite
 					}
+					out <- m
 				case <-time.After(checkSleep):
 				}
 			}
@@ -97,19 +95,11 @@ func getTarget(c common.Context, opts *common.PluginOptions) ([]string, error) {
 }
 
 // doPing runs a single turn of ping test for the given target with fixed
-// configuration, then send the result to the given channel.
-func doPing(target string, interval int, out chan interface{}) (err error) {
-	defer func() {
-		// NOTE: mainly for "send on closed channel"
-		// could it be prevented by closing the channel after all checkers?
-		if r := recover(); r != nil {
-			err = fmt.Errorf("panic: %v", r)
-		}
-	}()
-
+// configuration, then returns the result with error status.
+func doPing(target string, interval int) (bogo.PingMessage, error) {
 	pinger, err := ping.NewPinger(target)
 	if err != nil {
-		return err
+		return bogo.PingMessage{}, err
 	}
 
 	pinger.Count = pingCount
@@ -117,11 +107,11 @@ func doPing(target string, interval int, out chan interface{}) (err error) {
 	pinger.Timeout = pinger.Interval*time.Duration(pingCount) + time.Second
 
 	if err := pinger.Run(); err != nil {
-		return err
+		return bogo.PingMessage{}, err
 	}
 	stats := pinger.Statistics()
 
-	out <- bogo.PingMessage{
+	return bogo.PingMessage{
 		Addr:   stats.Addr,
 		IPAddr: stats.IPAddr,
 		Count:  stats.PacketsSent,
@@ -130,6 +120,5 @@ func doPing(target string, interval int, out chan interface{}) (err error) {
 		MaxRtt: stats.MaxRtt,
 		AvgRtt: stats.AvgRtt,
 		StdDev: stats.StdDevRtt,
-	}
-	return nil
+	}, nil
 }

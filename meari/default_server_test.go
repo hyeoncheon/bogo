@@ -28,12 +28,6 @@ func TestNewDefaultServer(t *testing.T) {
 func TestNewDefaultServer_Address(t *testing.T) {
 	r := require.New(t)
 
-	serverOnceOrig := serverOnce
-	serverOrig := server
-	defer func() {
-		serverOnce = serverOnceOrig
-		server = serverOrig
-	}()
 	serverOnce = sync.Once{}
 	server = nil
 
@@ -47,6 +41,9 @@ func TestNewDefaultServer_Address(t *testing.T) {
 func TestDefaultServer_Functions(t *testing.T) {
 	r := require.New(t)
 	r.Nil(nil)
+
+	serverOnce = sync.Once{}
+	server = nil
 
 	s := NewDefaultServer(&Options{})
 	r.NotNil(s)

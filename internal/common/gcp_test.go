@@ -17,18 +17,15 @@ func TestNewGCEMetaClient_SimGCE(t *testing.T) {
 
 	// mocking with true
 	originalFunc := gceMetaOnGCE
-	oGceClientOnce := gceClientOnce
-	oGceClient := gceClient
 	defer func() {
 		gceMetaOnGCE = originalFunc
-		gceClientOnce = oGceClientOnce
-		gceClient = oGceClient
 	}()
-	gceClientOnce = sync.Once{}
-	gceClient = nil
 	gceMetaOnGCE = func() bool {
 		return true
 	}
+
+	gceClientOnce = sync.Once{}
+	gceClient = nil
 
 	m := NewGCEMetaClient(&defaultContext{})
 	r.IsType((*GCEClient)(nil), m)
@@ -43,18 +40,15 @@ func TestNewGCEMetaClient_NoGCE(t *testing.T) {
 
 	// mocking with false
 	originalFunc := gceMetaOnGCE
-	oGceClientOnce := gceClientOnce
-	oGceClient := gceClient
 	defer func() {
 		gceMetaOnGCE = originalFunc
-		gceClientOnce = oGceClientOnce
-		gceClient = oGceClient
 	}()
-	gceClientOnce = sync.Once{}
-	gceClient = nil
 	gceMetaOnGCE = func() bool {
 		return false
 	}
+
+	gceClientOnce = sync.Once{}
+	gceClient = nil
 
 	m := NewGCEMetaClient(&defaultContext{})
 	r.Nil(m)

@@ -19,7 +19,10 @@ func TestContext(t *testing.T) {
 	r.IsType((*defaultContext)(nil), c)
 	r.Implements((*Context)(nil), c)
 	r.Implements((*context.Context)(nil), c)
+
 	r.IsType((context.CancelFunc)(nil), ccf)
+
+	r.IsType((chan interface{})(nil), c.Channel())
 }
 
 func TestContextCancel(t *testing.T) {

@@ -30,15 +30,19 @@ func stdoutRunner(c common.Context, _ common.PluginOptions, in chan interface{})
 
 	infinite:
 		for {
-			m, ok := <-in
-			if !ok {
-				break infinite
-			}
+			select {
+			case m, ok := <-in:
+				if !ok {
+					break infinite
+				}
 
-			if pm, ok := m.(bogo.PingMessage); ok {
-				logger.Infof("ping: %v", pm)
-			} else {
-				logger.Warnf("unknown: %v", m)
+				if pm, ok := m.(bogo.PingMessage); ok {
+					logger.Infof("ping: %v", pm)
+				} else {
+					logger.Warnf("unknown: %v", m)
+				}
+			case <-c.Done():
+				break infinite
 			}
 		}
 		logger.Infof("%s exporter exited", stdoutExporter)
