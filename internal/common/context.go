@@ -51,6 +51,13 @@ func (c *defaultContext) Channel() chan interface{} {
 }
 
 func (c *defaultContext) Cancel() {
+	defer func() {
+		if r := recover(); r != nil {
+			// close of closed channel
+			c.Logger().Error("panic: %v", r)
+		}
+	}()
+
 	c.Logger().Debug("cancelling the main context...")
 	c.cancel()
 
