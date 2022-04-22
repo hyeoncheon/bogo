@@ -84,35 +84,15 @@ func run(c common.Context, opts *common.Options) {
 	checks.StartAll(c, opts, c.Channel())
 	exporters.StartAll(c, opts, c.Channel())
 
-	server, err := meari.NewServer(c, opts)
+	server, err := startWebRoutine(c, opts)
 	if err != nil {
-		logger.Error("could not initiate the webserver: ", err)
+		logger.Errorf("could not start the webserver: ", err)
 	}
-
-	c.WG().Add(1)
-	go func() {
-		defer c.WG().Done()
-
-		err := server.Start()
-		if err == http.ErrServerClosed {
-			logger.Info("webserver closed successfully")
-		} else {
-			logger.Error("unexpected error: ", err)
-		}
-	}()
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-
-main:
-	for {
-		select {
-		case s := <-sig:
-			logger.Warnf("signal caught: %v", s)
-			break main
-		case <-time.After(500 * time.Millisecond):
-		}
-	}
+	s := <-sig
+	logger.Warnf("signal caught: %v", s)
 	signal.Reset()
 
 	logger.Info("shutting down webserver...")
@@ -123,4 +103,26 @@ main:
 	}
 
 	c.Cancel()
+}
+
+func startWebRoutine(c common.Context, opts *common.Options) (meari.Server, error) {
+	logger := c.Logger()
+
+	server, err := meari.NewServer(c, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	c.WG().Add(1)
+	go func() {
+		defer c.WG().Done()
+
+		err := server.Start()
+		if err == http.ErrServerClosed {
+			logger.Info("webserver closed")
+		} else {
+			logger.Error("unexpected error: ", err)
+		}
+	}()
+	return server, nil
 }
