@@ -35,7 +35,7 @@ func TestHeartbeatRunner(t *testing.T) {
 	c.Cancel()
 }
 
-/* chnaged the shutdown handling gracefully
+/* changed the shutdown handling gracefully
 func TestHeartbeatRunner_Panic(t *testing.T) {
 	r := require.New(t)
 
