@@ -12,6 +12,7 @@ const (
 	stdoutExporterInterval = 1 * time.Minute
 )
 
+// RegisterStdout returns a new Exporter and it is used by StartAll().
 func (*Exporter) RegisterStdout() *Exporter {
 	return &Exporter{
 		name:    stdoutExporter,
@@ -19,10 +20,14 @@ func (*Exporter) RegisterStdout() *Exporter {
 	}
 }
 
+// stdoutRunner is a runner function for the Stdout Exporter. It starts a go
+// routine for the exporter and returns the status, then the exporter runs
+// forever and will print out catched message until the context is canceled.
 func stdoutRunner(c common.Context, _ common.PluginOptions, in chan interface{}) error {
 	logger := c.Logger().WithField("exporter", stdoutExporter)
+
 	c.WG().Add(1)
-	go func() {
+	go func() { //nolint
 		defer c.WG().Done()
 
 		ticker := time.NewTicker(stdoutExporterInterval)
@@ -47,5 +52,6 @@ func stdoutRunner(c common.Context, _ common.PluginOptions, in chan interface{})
 		}
 		logger.Infof("%s exporter exited", stdoutExporter)
 	}()
+
 	return nil
 }

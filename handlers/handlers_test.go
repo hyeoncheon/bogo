@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestAllHandlers tests if AllHandlers works correctly.
 func TestAllHandlers(t *testing.T) {
 	r := require.New(t)
 

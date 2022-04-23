@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestNewServer tests NewServer with default Options and default Context.
 func TestNewServer(t *testing.T) {
 	r := require.New(t)
 

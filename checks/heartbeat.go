@@ -12,6 +12,7 @@ const (
 	heartbeatCheckerIntervalSec = 60
 )
 
+// RegisterHeartbeat returns a new Checker instance and it is used by StartAll().
 func (*Checker) RegisterHeartbeat() *Checker {
 	return &Checker{
 		name:    heartbeatChecker,
@@ -19,6 +20,10 @@ func (*Checker) RegisterHeartbeat() *Checker {
 	}
 }
 
+// heartbeatRunner is a Runner function for the HeartbeatChecker, the sample
+// checker implementation.
+// It starts goroutine that report periodic heartbeat and returns the error
+// status.
 func heartbeatRunner(c common.Context, opts common.PluginOptions, out chan interface{}) error {
 	logger := c.Logger().WithField("checker", heartbeatChecker)
 
@@ -28,7 +33,7 @@ func heartbeatRunner(c common.Context, opts common.PluginOptions, out chan inter
 	}
 
 	c.WG().Add(1)
-	go func() {
+	go func() { // nolint
 		defer c.WG().Done()
 
 		ticker := time.NewTicker(time.Duration(interval) * time.Second)
@@ -47,5 +52,6 @@ func heartbeatRunner(c common.Context, opts common.PluginOptions, out chan inter
 		}
 		logger.Infof("%s checker exited", heartbeatChecker)
 	}()
+
 	return nil
 }

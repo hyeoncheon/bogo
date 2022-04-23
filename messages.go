@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// PingMessage is a type specific message for ping statistics
+// PingMessage is a type specific message for ping statistics.
 type PingMessage struct {
 	Addr   string
 	IPAddr *net.IPAddr

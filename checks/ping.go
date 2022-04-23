@@ -23,6 +23,7 @@ var (
 	errTargetStringShouldNotBeEmpty = errors.New("target string should not be empty")
 )
 
+// RegisterPing returns a new Checker instance and it is used by StartAll().
 func (*Checker) RegisterPing() *Checker {
 	return &Checker{
 		name:    pingChecker,
@@ -30,6 +31,8 @@ func (*Checker) RegisterPing() *Checker {
 	}
 }
 
+// pingRunner is a Runner function for the PingChecker.
+// It starts goroutines for each target and returns the error status.
 func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{}) error {
 	logger := c.Logger().WithField("checker", pingChecker)
 	logger.Debug("ping opts: ", opts)
@@ -52,7 +55,7 @@ func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{
 	// spawn ping workers for each target
 	for _, h := range targets {
 		c.WG().Add(1)
-		go func(host string) {
+		go func(host string) { // nolint
 			defer c.WG().Done()
 
 			ticker := time.NewTicker(time.Duration(checkInterval) * time.Second)
@@ -68,6 +71,7 @@ func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{
 					m, err := doPing(host, pingInterval)
 					if err != nil {
 						logger.Error(err)
+
 						break infinite
 					}
 					out <- m
@@ -77,9 +81,13 @@ func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{
 			logger.Infof("%s checker for %s exited", pingChecker, host)
 		}(h)
 	}
+
 	return nil
 }
 
+// getTarget returns the list of target hosts to ping as an array of strings.
+// When it runs on a supported cloud platform, it could uses the metadata of
+// the platform (which is stored as "targets").
 func getTarget(c common.Context, opts *common.PluginOptions) ([]string, error) {
 	targets := opts.GetValuesOr("targets", []string{})
 
@@ -115,6 +123,7 @@ func doPing(target string, interval int) (bogo.PingMessage, error) {
 	if err := pinger.Run(); err != nil {
 		return bogo.PingMessage{}, err
 	}
+
 	stats := pinger.Statistics()
 
 	return bogo.PingMessage{

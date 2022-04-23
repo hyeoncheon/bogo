@@ -1,3 +1,5 @@
+// Package meari provides a simple webserver feature to enable interactive
+// actions such as MTR looking glass.
 package meari
 
 import (
@@ -5,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/labstack/echo/v4"
 
@@ -12,23 +15,38 @@ import (
 	"github.com/hyeoncheon/bogo/internal/common"
 )
 
+var errUnsupportedMethod = errors.New("unsupported method")
+
+// for the singleton server.
 var (
-	errorCouldNotInitiate  = errors.New("could not initiate the web server")
-	errorUnsupportedMethod = errors.New("unsupported method")
+	serverOnce sync.Once
+	server     Server
 )
 
+// Options is a basic structure that contains all options for the Server
+// implementation.
 type Options struct {
 	Logger  common.Logger
 	Address string
 }
 
+// Server is an interface for the built-in webserver.
 type Server interface {
+	// Address returns the address on which the server is listening.
 	Address() string
-	Start() error
-	Shutdown(c context.Context) error
-	GET(string, echo.HandlerFunc)
+	// Serve starts the webserver and wait until the server stops.
+	// It has the same behavior of `(http.Server).Serve()` and always returns
+	// non-nil error. Expected error is `http.ErrServerClosed`.
+	Serve() error
+	// Shutdown stops the webserver gracefully.
+	// It is equivalent to `(http.Server).Shutdown()`
+	Shutdown(context context.Context) error
+	// GET registers a new GET route for the given path with the given request handler.
+	GET(path string, handler echo.HandlerFunc)
 }
 
+// NewServer initializes a new `defaultServer`, registers all available
+// request handlers, then returns the Server instance.
 func NewServer(c common.Context, opts *common.Options) (Server, error) {
 	logger := c.Logger().WithField("module", "web")
 
@@ -36,10 +54,8 @@ func NewServer(c common.Context, opts *common.Options) (Server, error) {
 		Logger:  logger,
 		Address: opts.Address,
 	}
+
 	server := NewDefaultServer(serverOpts)
-	if server == nil {
-		return nil, fmt.Errorf("%w: %v", errorCouldNotInitiate, serverOpts)
-	}
 
 	for p, handler := range handlers.AllHandlers() {
 		switch handler.Method {
@@ -47,7 +63,7 @@ func NewServer(c common.Context, opts *common.Options) (Server, error) {
 			logger.Debugf("register handler for 'GET %v'...", p)
 			server.GET(p, handler.Handler)
 		default:
-			return nil, fmt.Errorf("%w: %v", errorUnsupportedMethod, handler)
+			return nil, fmt.Errorf("%w: %v", errUnsupportedMethod, handler)
 		}
 	}
 

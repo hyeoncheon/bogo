@@ -33,7 +33,7 @@ func TestPingRunner(t *testing.T) {
 	r.NoError(pingRunner(c, o, c.Channel()))
 	get := <-c.Channel()
 	r.NotNil(get)
-	m := get.(bogo.PingMessage)
+	m, _ := get.(bogo.PingMessage)
 	r.IsType(bogo.PingMessage{}, m)
 
 	c.Cancel()

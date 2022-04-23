@@ -3,13 +3,15 @@ package meari
 import (
 	"context"
 	"net/http"
-	"sync"
 
 	"github.com/hyeoncheon/bogo/internal/defaults"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
+// defaultServer is a "echo" based simple webserver that implements the
+// Server interface.
 type defaultServer struct {
 	*echo.Echo
 	address string
@@ -17,11 +19,9 @@ type defaultServer struct {
 
 var _ Server = &defaultServer{}
 
-var (
-	serverOnce sync.Once
-	server     Server
-)
-
+// NewDefaultServer initializes an instance of defaultServer, registers
+// the "root" handler, and returns it as a Server. Currently, Server works as
+// a singleton.
 func NewDefaultServer(opts *Options) Server {
 	serverOnce.Do(func() {
 		s := &defaultServer{
@@ -42,21 +42,26 @@ func NewDefaultServer(opts *Options) Server {
 		})
 		server = s
 	})
+
 	return server
 }
 
+// Address implements the Server interface.
 func (s *defaultServer) Address() string {
 	return s.address
 }
 
-func (s *defaultServer) Start() error {
+// Serve implements the Server interface.
+func (s *defaultServer) Serve() error {
 	return s.Echo.Start(s.address)
 }
 
+// Shutdown implements the Server interface.
 func (s *defaultServer) Shutdown(c context.Context) error {
 	return s.Echo.Shutdown(c)
 }
 
+// GET implements the Server interface.
 func (s *defaultServer) GET(path string, handler echo.HandlerFunc) {
 	s.Echo.GET(path, handler)
 }
