@@ -30,9 +30,9 @@ func TestRun(t *testing.T) {
 	}()
 
 	time.Sleep(1 * time.Second)
-	syscall.Kill(syscall.Getpid(), syscall.SIGUSR1)
+	_ = syscall.Kill(syscall.Getpid(), syscall.SIGUSR1)
 
-	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+	_ = syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 	wg.Wait()
 	r.True(indicator)
 }

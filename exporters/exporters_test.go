@@ -4,9 +4,12 @@ import (
 	"testing"
 
 	"github.com/hyeoncheon/bogo/internal/common"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestStartAll(t *testing.T) {
+	r := require.New(t)
 	opts := common.DefaultOptions()
 	opts.Exporters = []string{"stdout"}
 	opts.ExporterOptions = map[string]common.PluginOptions{
@@ -16,7 +19,8 @@ func TestStartAll(t *testing.T) {
 	}
 	ctx, _ := common.NewDefaultContext(&opts)
 
-	StartAll(ctx, &opts, ctx.Channel())
+	n := StartAll(ctx, &opts, ctx.Channel())
+	r.Equal(1, n)
 
 	ctx.Channel() <- "message"
 

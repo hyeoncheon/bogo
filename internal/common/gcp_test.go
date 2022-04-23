@@ -254,7 +254,7 @@ func TestGCEClient_RoundTrip(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		ua := req.Header.Get("User-Agent")
-		rw.Write([]byte(ua))
+		_, _ = rw.Write([]byte(ua))
 	}))
 	defer server.Close()
 

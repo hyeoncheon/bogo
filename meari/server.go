@@ -2,6 +2,7 @@ package meari
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -9,6 +10,11 @@ import (
 
 	"github.com/hyeoncheon/bogo/handlers"
 	"github.com/hyeoncheon/bogo/internal/common"
+)
+
+var (
+	errorCouldNotInitiate  = errors.New("could not initiate the web server")
+	errorUnsupportedMethod = errors.New("unsupported method")
 )
 
 type Options struct {
@@ -32,7 +38,7 @@ func NewServer(c common.Context, opts *common.Options) (Server, error) {
 	}
 	server := NewDefaultServer(serverOpts)
 	if server == nil {
-		return nil, fmt.Errorf("could not initiate the web server: %v", serverOpts)
+		return nil, fmt.Errorf("%w: %v", errorCouldNotInitiate, serverOpts)
 	}
 
 	for p, handler := range handlers.AllHandlers() {
@@ -41,7 +47,7 @@ func NewServer(c common.Context, opts *common.Options) (Server, error) {
 			logger.Debugf("register handler for 'GET %v'...", p)
 			server.GET(p, handler.Handler)
 		default:
-			return nil, fmt.Errorf("unsupported method for %v", handler)
+			return nil, fmt.Errorf("%w: %v", errorUnsupportedMethod, handler)
 		}
 	}
 

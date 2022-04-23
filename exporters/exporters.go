@@ -24,11 +24,12 @@ func (p *Exporter) Run(c common.Context, opts common.PluginOptions, ch chan inte
 	return p.runFunc(c, opts, ch)
 }
 
-func StartAll(c common.Context, opts *common.Options, ch chan interface{}) {
+func StartAll(c common.Context, opts *common.Options, ch chan interface{}) int {
 	logger := c.Logger().WithField("module", "exporter")
+	n := 0
 
 	for _, x := range common.Plugins(reflect.TypeOf(&Exporter{})) {
-		x := x.(common.Plugin)
+		x, _ := x.(common.Plugin)
 		if len(opts.Exporters) > 0 && !common.Contains(opts.Exporters, x.Name()) {
 			logger.Debugf("%v is not on the exporter list. skipping...", x.Name())
 			continue
@@ -39,6 +40,9 @@ func StartAll(c common.Context, opts *common.Options, ch chan interface{}) {
 		if err := x.Run(c, eopts, ch); err != nil {
 			logger.Errorf("%s exporter was aborted: %v", x.Name(), err)
 			// TODO: should returns error?
+		} else {
+			n++
 		}
 	}
+	return n
 }
