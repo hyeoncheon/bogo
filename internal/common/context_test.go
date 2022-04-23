@@ -38,6 +38,20 @@ func TestContextCancel(t *testing.T) {
 	r.NotNil(c.Err())
 }
 
+func TestContextDoubleCancel(t *testing.T) {
+	r := require.New(t)
+
+	opt := Options{LogLevel: "info"}
+	c, ccf := NewDefaultContext(&opt)
+	r.NotNil(c)
+	r.NotNil(ccf)
+
+	r.Nil(c.Err())
+	c.Cancel()
+	r.NotNil(c.Err())
+	c.Cancel()
+}
+
 func TestContextWG(t *testing.T) {
 	r := require.New(t)
 
