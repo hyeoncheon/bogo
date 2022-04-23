@@ -70,6 +70,11 @@ func TestBuildPluginOptions(t *testing.T) {
 			out: nil,
 			e:   fmt.Errorf("%w: heartbeat", ErrInvalidePluginOption),
 		},
+		{
+			in:  "",
+			out: map[string]PluginOptions{},
+			e:   nil,
+		},
 	}
 
 	for _, tc := range tests {
