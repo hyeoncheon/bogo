@@ -1,7 +1,7 @@
 package common
 
 import (
-	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -63,12 +63,12 @@ func TestBuildPluginOptions(t *testing.T) {
 		{
 			in:  "heartbeat:interval",
 			out: nil,
-			e:   errors.New("invalid plugin option 'heartbeat:interval'"),
+			e:   fmt.Errorf("%w: heartbeat:interval", ErrInvalidePluginOption),
 		},
 		{
 			in:  "heartbeat",
 			out: nil,
-			e:   errors.New("invalid plugin option 'heartbeat'"),
+			e:   fmt.Errorf("%w: heartbeat", ErrInvalidePluginOption),
 		},
 	}
 

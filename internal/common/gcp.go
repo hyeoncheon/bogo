@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -11,6 +12,8 @@ import (
 )
 
 const GOOGLE = "Google"
+
+var ErrorNotOnGCE = errors.New("not on the Google Compute Engine")
 
 // asset GCEClient for MetaClient iplemetations
 var _ MetaClient = &GCEClient{}

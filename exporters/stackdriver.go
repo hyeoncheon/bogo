@@ -47,7 +47,7 @@ func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interfa
 	}
 
 	if err := registerViews(); err != nil {
-		return fmt.Errorf("could not register views: %v", err)
+		return fmt.Errorf("could not register views: %w", err)
 	}
 
 	exporter, err := createAndStartExporter()
@@ -77,7 +77,7 @@ func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interfa
 				if pm, ok := m.(bogo.PingMessage); ok {
 					logger.Debugf("ping: %v", pm)
 					if err := recordPingMessage(r, &pm); err != nil {
-						logger.Errorf("message %v: %v", pm, err)
+						logger.Errorf("message %v: %w", pm, err)
 					}
 				} else {
 					logger.Warnf("unknown: %v", m)
@@ -95,7 +95,7 @@ func getReporter(c common.Context) (*reporter, error) {
 	// currently, stackdriver exporter is only suppored on the GCE instance
 	meta := c.Meta()
 	if meta == nil || meta.WhereAmI() != "Google" {
-		return nil, fmt.Errorf("not on the Google Compute Engine")
+		return nil, common.ErrorNotOnGCE
 	}
 
 	return &reporter{
@@ -146,11 +146,11 @@ func createAndStartExporter() (*stackdriver.Exporter, error) {
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not create exporter: %v", err)
+		return nil, fmt.Errorf("could not create exporter: %w", err)
 	}
 
 	if err := exporter.StartMetricsExporter(); err != nil {
-		return nil, fmt.Errorf("could not start metric exporter: %v", err)
+		return nil, fmt.Errorf("could not start metric exporter: %w", err)
 	}
 	return exporter, nil
 }
@@ -166,7 +166,7 @@ func recordPingMessage(r *reporter, m *bogo.PingMessage) error {
 		avgRttMs.M(float64(m.AvgRtt.Milliseconds())),
 		lossRate.M(m.Loss),
 	); err != nil {
-		return fmt.Errorf("could not send ping stat: %v", err)
+		return fmt.Errorf("could not send ping stat: %w", err)
 	}
 	return nil
 }

@@ -29,11 +29,12 @@ func (p *Checker) Run(c common.Context, opts common.PluginOptions, ch chan inter
 	return p.runFunc(c, opts, ch)
 }
 
-func StartAll(c common.Context, opts *common.Options, ch chan interface{}) {
+func StartAll(c common.Context, opts *common.Options, ch chan interface{}) int {
 	logger := c.Logger().WithField("module", "checker")
+	n := 0
 
 	for _, x := range common.Plugins(reflect.TypeOf(&Checker{})) {
-		x := x.(common.Plugin)
+		x, _ := x.(common.Plugin)
 		if len(opts.Checkers) > 0 && !common.Contains(opts.Checkers, x.Name()) {
 			logger.Debugf("%v is not on the checker list. skipping...", x.Name())
 			continue
@@ -44,6 +45,9 @@ func StartAll(c common.Context, opts *common.Options, ch chan interface{}) {
 		if err := x.Run(c, copts, ch); err != nil {
 			logger.Errorf("%s checker was aborted: %v", x.Name(), err)
 			// TODO: should returns error?
+		} else {
+			n++
 		}
 	}
+	return n
 }

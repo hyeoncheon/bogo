@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -81,8 +82,9 @@ func run(c common.Context, opts *common.Options) {
 		}
 	}()
 
-	checks.StartAll(c, opts, c.Channel())
-	exporters.StartAll(c, opts, c.Channel())
+	cn := checks.StartAll(c, opts, c.Channel())
+	en := exporters.StartAll(c, opts, c.Channel())
+	logger.Infof("%d checkers and %d exporters started", cn, en)
 
 	server, err := startWebRoutine(c, opts)
 	if err != nil {
@@ -118,7 +120,7 @@ func startWebRoutine(c common.Context, opts *common.Options) (meari.Server, erro
 		defer c.WG().Done()
 
 		err := server.Start()
-		if err == http.ErrServerClosed {
+		if errors.Is(err, http.ErrServerClosed) {
 			logger.Info("webserver closed")
 		} else {
 			logger.Error("unexpected error: ", err)

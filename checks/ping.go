@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,6 +16,11 @@ const (
 	pingCheckerIntervalSec = 30
 	pingIntervalMilliSec   = 1000
 	pingCount              = 10
+)
+
+var (
+	errNoTargetsSpecified           = errors.New("no targets specified")
+	errTargetStringShouldNotBeEmpty = errors.New("target string should not be empty")
 )
 
 func (*Checker) RegisterPing() *Checker {
@@ -35,12 +41,12 @@ func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{
 
 	checkInterval, err := opts.GetIntegerOr("check_interval", pingCheckerIntervalSec)
 	if err != nil {
-		return fmt.Errorf("invalid option value: check_interval")
+		return fmt.Errorf("%w: check_interval", common.ErrInvalidOptionValue)
 	}
 
 	pingInterval, err := opts.GetIntegerOr("ping_interval", pingIntervalMilliSec)
 	if err != nil {
-		return fmt.Errorf("invalid option value: check_interval")
+		return fmt.Errorf("%w: check_interval", common.ErrInvalidOptionValue)
 	}
 
 	// spawn ping workers for each target
@@ -82,12 +88,12 @@ func getTarget(c common.Context, opts *common.PluginOptions) ([]string, error) {
 	}
 
 	if len(targets) < 1 {
-		return targets, fmt.Errorf("no targets specified")
+		return targets, errNoTargetsSpecified
 	}
 
 	for _, t := range targets {
 		if len(t) < 1 {
-			return targets, fmt.Errorf("target string should not be empty: %v", targets)
+			return targets, fmt.Errorf("%w: %v", errTargetStringShouldNotBeEmpty, targets)
 		}
 	}
 

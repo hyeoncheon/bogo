@@ -1,7 +1,7 @@
 package checks
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/hyeoncheon/bogo/internal/common"
@@ -24,7 +24,7 @@ func heartbeatRunner(c common.Context, opts common.PluginOptions, out chan inter
 
 	interval, err := opts.GetIntegerOr("interval", heartbeatCheckerIntervalSec)
 	if err != nil {
-		return errors.New("invalid option value: interval")
+		return fmt.Errorf("%w: interval", common.ErrInvalidOptionValue)
 	}
 
 	c.WG().Add(1)

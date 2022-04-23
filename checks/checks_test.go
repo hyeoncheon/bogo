@@ -21,7 +21,8 @@ func TestStartAll(t *testing.T) {
 	ctx, _ := common.NewDefaultContext(&opts)
 	defer ctx.Cancel()
 
-	StartAll(ctx, &opts, ctx.Channel())
+	n := StartAll(ctx, &opts, ctx.Channel())
+	r.Equal(1, n)
 
 	out := <-ctx.Channel()
 	r.NotNil(out)
@@ -41,6 +42,8 @@ func TestStartAll_Error(t *testing.T) {
 	ctx, _ := common.NewDefaultContext(&opts)
 	defer ctx.Cancel()
 
-	StartAll(ctx, &opts, ctx.Channel())
+	n := StartAll(ctx, &opts, ctx.Channel())
+	r.Equal(0, n)
+
 	r.Equal("--- &{{} [0 0 0]}", fmt.Sprintf("--- %v", ctx.WG()))
 }

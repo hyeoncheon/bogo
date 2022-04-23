@@ -1,10 +1,16 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
+)
+
+var (
+	ErrInvalidePluginOption = errors.New("invalid plugin option")
+	ErrInvalidOptionValue   = errors.New("invalid option value")
 )
 
 type Plugin interface {
@@ -59,7 +65,7 @@ func BuildPluginOptions(s string) (map[string]PluginOptions, error) {
 					options[t[0]] = PluginOptions{t[1]: StringValues(t[2])}
 				}
 			} else {
-				return nil, fmt.Errorf("invalid plugin option '%v'", e)
+				return nil, fmt.Errorf("%w: %v", ErrInvalidePluginOption, e)
 			}
 		}
 	}
