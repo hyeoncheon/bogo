@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestEchoHandler tests if the EchoHandler works fine in a ideal condition.
 func TestEchoHandler(t *testing.T) {
 	r := require.New(t)
 

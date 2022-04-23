@@ -11,14 +11,15 @@ import (
 	"cloud.google.com/go/compute/metadata"
 )
 
+// GOOGLE is the name of the platform.
 const GOOGLE = "Google"
 
-var ErrorNotOnGCE = errors.New("not on the Google Compute Engine")
+// ErrNotOnGCE indicates that the application is not running on a GCE instance.
+var ErrNotOnGCE = errors.New("not on the Google Compute Engine")
 
-// asset GCEClient for MetaClient iplemetations
 var _ MetaClient = &GCEClient{}
 
-// GCEClient is a struct for handling GCE metadata client
+// GCEClient is a struct for handling GCE metadata client.
 type GCEClient struct {
 	*metadata.Client
 	logger Logger
@@ -49,27 +50,30 @@ func NewGCEMetaClient(c Context) MetaClient {
 			}
 		}
 	})
+
 	return gceClient
 }
 
-// WhereAmI returns the name of CSP.
+// WhereAmI implements MetaClient.
 func (m *GCEClient) WhereAmI() string {
 	if m.Client != nil {
 		return GOOGLE
 	}
+
 	return NOWHERE
 }
 
 // gceMetaInstanceName is a function pointer to metadata.InstanceName().
-// Use it to make unit test easier.
+// It returns the current VM's instance ID string.
 var gceMetaInstanceName = (*metadata.Client).InstanceName
 
-// InstanceName returns the current VM's instance name string.
+// InstanceName implements MetaClient.
 func (m *GCEClient) InstanceName() string {
 	ret, err := gceMetaInstanceName(m.Client)
 	if err != nil {
 		return UNKNOWN
 	}
+
 	return ret
 }
 
@@ -77,34 +81,36 @@ func (m *GCEClient) InstanceName() string {
 // Use it to make unit test easier.
 var gceMetaExternalIP = (*metadata.Client).ExternalIP
 
-// ExternalIP returns the instance's primary external (public) IP address.
+// ExternalIP implements MetaClient.
 func (m *GCEClient) ExternalIP() string {
 	ret, err := gceMetaExternalIP(m.Client)
 	if err != nil {
 		return UNKNOWN
 	}
+
 	return ret
 }
 
 // gceMetaZone is a function pointer to metadata.Zone().
-// Use it to make unit test easier.
+// It returns the current VM's zone.
 var gceMetaZone = (*metadata.Client).Zone
 
-// Zone returns the current VM's zone, such as "asia-northeast3-a".
+// Zone implements MetaClient.
 func (m *GCEClient) Zone() string {
 	ret, err := gceMetaZone(m.Client)
 	if err != nil {
 		return UNKNOWN
 	}
+
 	return ret
 }
 
 // gceMetaInstanceAttributeValue is a function pointer to metadata.InstanceAttributeValue().
-// Use it to make unit test easier.
+// It returns the value of the provided VM instance attribute.
 var gceMetaInstanceAttributeValue = (*metadata.Client).InstanceAttributeValue
 
 // gceMetaProjectAttributeValue is a function pointer to metadata.ProjectAttributeValue().
-// Use it to make unit test easier.
+// It returns the value of the provided project attribute.
 var gceMetaProjectAttributeValue = (*metadata.Client).ProjectAttributeValue
 
 // AttributeValue returns the raw metadata stored for the instance. It returns empty
@@ -118,11 +124,13 @@ func (m *GCEClient) AttributeValue(key string) string {
 	value, err := gceMetaInstanceAttributeValue(m.Client, key)
 	if err != nil {
 		m.logger.Debugf("no '%v' in instance attributes.", key)
+
 		value, err = gceMetaProjectAttributeValue(m.Client, key)
 		if err != nil {
 			m.logger.Debugf("no '%v' in project attributes.", key)
 		}
 	}
+
 	return value
 }
 
@@ -135,6 +143,7 @@ func (m *GCEClient) AttributeCSV(s string) []string {
 	for _, t := range strings.Split(m.AttributeValue(s), ",") {
 		result = append(result, strings.TrimSpace(t))
 	}
+
 	return result
 }
 
@@ -147,6 +156,7 @@ func (m *GCEClient) AttributeSSV(s string) []string {
 	for _, t := range strings.Split(m.AttributeValue(s), " ") {
 		result = append(result, strings.TrimSpace(t))
 	}
+
 	return result
 }
 
@@ -156,25 +166,27 @@ func (m *GCEClient) AttributeSSV(s string) []string {
 // "oh", "little", and "darling".
 func (m *GCEClient) AttributeValues(s string) []string {
 	result := []string{}
+
 	for _, t := range strings.Split(m.AttributeValue(s), ",") {
 		for _, t := range strings.Split(strings.TrimSpace(t), " ") {
 			result = append(result, strings.TrimSpace(t))
 		}
 	}
+
 	return result
 }
 
 // from https://github.com/googleapis/google-cloud-go/blob/master/compute/metadata/examples_test.go
 
-// newGoogleCloudMetadataClient
+// newGoogleCloudMetadataClient creates and returns a new GCE meta client
+// with customized Transport.
 func newGoogleCloudMetadataClient() *metadata.Client {
-	m := metadata.NewClient(&http.Client{
+	return metadata.NewClient(&http.Client{
 		Transport: userAgentTransport{
 			userAgent: bogo.Name + "/" + bogo.Version,
 			base:      http.DefaultTransport,
 		},
 	})
-	return m
 }
 
 // userAgentTransport sets the User-Agent header before calling base.
@@ -186,5 +198,6 @@ type userAgentTransport struct {
 // RoundTrip implements the http.RoundTripper interface.
 func (t userAgentTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("User-Agent", t.userAgent)
+
 	return t.base.RoundTrip(req)
 }

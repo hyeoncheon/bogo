@@ -2,7 +2,7 @@ package common
 
 import "github.com/hyeoncheon/bogo/internal/defaults"
 
-// Options is a struct to store command line options
+// Options is a struct to store command line options.
 type Options struct {
 	IsDebug  bool
 	LogLevel string
@@ -20,6 +20,7 @@ type Options struct {
 	ExporterOptions map[string]PluginOptions
 }
 
+// DefaultOptions returns Option structure with the default values.
 func DefaultOptions() Options {
 	return Options{
 		IsDebug:   false,

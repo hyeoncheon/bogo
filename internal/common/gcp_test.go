@@ -1,12 +1,14 @@
 package common
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/stretchr/testify/require"
@@ -264,9 +266,13 @@ func TestGCEClient_RoundTrip(t *testing.T) {
 		base:      http.DefaultTransport,
 	}
 
-	resp, err := client.Get(server.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL, http.NoBody)
 	r.NoError(err)
-	r.NotNil(resp)
+	resp, err := client.Do(req)
+	r.NoError(err)
+	r.Equal(http.StatusOK, resp.StatusCode)
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)

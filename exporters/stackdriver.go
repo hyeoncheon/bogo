@@ -20,6 +20,7 @@ const (
 	stackdriverExporterInterval = 1 * time.Minute
 )
 
+// RegisterStackdriver returns a new Exporter and it is used by StartAll().
 func (*Exporter) RegisterStackdriver() *Exporter {
 	return &Exporter{
 		name:    stackdriverExporter,
@@ -38,6 +39,11 @@ var (
 	lossRate = stats.Float64("ping_loss", "packet loss rate", "%")
 )
 
+// stackdriverRunner is a runner function for the Stackdriver Exporter.
+// It starts a go routine for the exporter and returns error status.
+// The go routine runs forever until the context canceled, and will
+// send received data to the Google Cloud Platform Cloud Monitoring
+// (previously known as Stackdriver).
 func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interface{}) error {
 	logger := c.Logger().WithField("exporter", stackdriverExporter)
 
@@ -56,7 +62,7 @@ func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interfa
 	}
 
 	c.WG().Add(1)
-	go func() {
+	go func() { //nolint
 		defer c.WG().Done()
 
 		ticker := time.NewTicker(stackdriverExporterInterval)
@@ -88,14 +94,17 @@ func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interfa
 		}
 		logger.Infof("%s exporter exited", stackdriverExporter)
 	}()
+
 	return nil
 }
 
+// getReporter configures and returns a new instance of reporter if it runs
+// on GCP. Currently, only GCE VM is supported for this feature.
 func getReporter(c common.Context) (*reporter, error) {
 	// currently, stackdriver exporter is only suppored on the GCE instance
 	meta := c.Meta()
 	if meta == nil || meta.WhereAmI() != "Google" {
-		return nil, common.ErrorNotOnGCE
+		return nil, common.ErrNotOnGCE
 	}
 
 	return &reporter{
@@ -105,12 +114,13 @@ func getReporter(c common.Context) (*reporter, error) {
 	}, nil
 }
 
+// registerViews configures and registers the views.
 func registerViews() error {
 	v := &view.View{
 		Name:        "ping/rtt_average",
 		Measure:     avgRttMs,
 		Description: "ping average rtt",
-		Aggregation: view.Distribution(0, 5, 10, 50, 100, 150, 200, 400),
+		Aggregation: view.Distribution(0, 5, 10, 50, 100, 150, 200, 400), //nolint
 		TagKeys: []tag.Key{
 			tag.MustNewKey("node"),
 			tag.MustNewKey("addr"),
@@ -126,7 +136,7 @@ func registerViews() error {
 		Name:        "ping/packet_loss",
 		Measure:     lossRate,
 		Description: "ping packet loss rate",
-		Aggregation: view.Distribution(0, 5, 10, 50, 100),
+		Aggregation: view.Distribution(0, 5, 10, 50, 100), //nolint
 		TagKeys: []tag.Key{
 			tag.MustNewKey("node"),
 			tag.MustNewKey("addr"),
@@ -134,9 +144,11 @@ func registerViews() error {
 			tag.MustNewKey("target"),
 		},
 	}
+
 	return view.Register(vLoss)
 }
 
+// createAndStartExporter starts the stackdriver exporter.
 func createAndStartExporter() (*stackdriver.Exporter, error) {
 	// create exporter instance for stackdriver
 	exporter, err := stackdriver.NewExporter(stackdriver.Options{
@@ -152,9 +164,11 @@ func createAndStartExporter() (*stackdriver.Exporter, error) {
 	if err := exporter.StartMetricsExporter(); err != nil {
 		return nil, fmt.Errorf("could not start metric exporter: %w", err)
 	}
+
 	return exporter, nil
 }
 
+// recordPingMessage sends the given ping message to the Cloud Monitoring.
 func recordPingMessage(r *reporter, m *bogo.PingMessage) error {
 	if err := stats.RecordWithTags(context.Background(),
 		[]tag.Mutator{
@@ -168,5 +182,6 @@ func recordPingMessage(r *reporter, m *bogo.PingMessage) error {
 	); err != nil {
 		return fmt.Errorf("could not send ping stat: %w", err)
 	}
+
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestMtrHandler tests if the handler works fine in ideal condition.
 func TestMtrHandler(t *testing.T) {
 	r := require.New(t)
 
@@ -35,6 +36,8 @@ func TestMtrHandler(t *testing.T) {
 	r.Contains(body, "$ mtr -bznrTP53 -c5 127.0.0.1\n")
 }
 
+// TestMtrHandler_NoHost tests if the handler works nicely when the target
+// argument is empty.
 func TestMtrHandler_NoHost(t *testing.T) {
 	r := require.New(t)
 
@@ -60,6 +63,7 @@ func TestMtrHandler_NoHost(t *testing.T) {
 	r.Contains(body, "Failed to resolve host")
 }
 
+// TestMtrHandler_Error tests the handler works well in a error condition.
 func TestMtrHandler_Error(t *testing.T) {
 	r := require.New(t)
 

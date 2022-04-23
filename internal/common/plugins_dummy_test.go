@@ -2,18 +2,18 @@ package common
 
 import "errors"
 
-// for test
+// for test.
 type Plugger struct {
 	name    string
 	runFunc Runner
 }
 
-// Name implements Plugin
+// Name implements Plugin.
 func (p *Plugger) Name() string {
 	return p.name
 }
 
-// Run implements Plugin
+// Run implements Plugin.
 func (p *Plugger) Run(c Context, o PluginOptions, ch chan interface{}) error {
 	return p.runFunc(c, o, ch)
 }

@@ -1,8 +1,14 @@
+// Package common contains common components for the whole application such
+// as context, logger, options, plugins, and meta client for cloud platforms.
 package common
 
 import (
 	"context"
 	"sync"
+)
+
+const (
+	numChannel = 10
 )
 
 // Context is the main application context for whole components
@@ -16,13 +22,13 @@ type Context interface {
 	Meta() MetaClient
 }
 
-// asset DefautContext for Context iplemetations
+// asset DefautContext for Context iplemetations.
 var _ Context = &defaultContext{}
 var _ context.Context = &defaultContext{}
 
 // defaultContext is the default context for bogo app.
 type defaultContext struct {
-	context.Context
+	context.Context // nolint
 	Options
 	cancel context.CancelFunc
 	ch     chan interface{}
@@ -35,11 +41,12 @@ type defaultContext struct {
 // then returns it as Context.
 func NewDefaultContext(opts *Options) (Context, context.CancelFunc) {
 	c, cancel := context.WithCancel(context.Background())
+
 	return &defaultContext{
 		Context: c,
 		Options: *opts,
 		cancel:  cancel,
-		ch:      make(chan interface{}, 10),
+		ch:      make(chan interface{}, numChannel),
 		wg:      &sync.WaitGroup{},
 		logger:  NewDefaultLogger(opts.LogLevel),
 		meta:    nil,
@@ -82,5 +89,6 @@ func (c *defaultContext) Meta() MetaClient {
 	if c.meta == nil {
 		c.meta = NewGCEMetaClient(c)
 	}
+
 	return c.meta
 }

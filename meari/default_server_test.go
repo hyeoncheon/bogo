@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+// TestNewDefaultServer tests the generator and if the singleton works fine.
 func TestNewDefaultServer(t *testing.T) {
 	r := require.New(t)
 
@@ -25,6 +26,7 @@ func TestNewDefaultServer(t *testing.T) {
 	r.Nil(nil)
 }
 
+// TestNewDefaultServer_Address tests if Options.Address is working.
 func TestNewDefaultServer_Address(t *testing.T) {
 	r := require.New(t)
 
@@ -38,6 +40,7 @@ func TestNewDefaultServer_Address(t *testing.T) {
 	r.Nil(nil)
 }
 
+// TestDefaultServer_Functions tests a lifecycle of the server.
 func TestDefaultServer_Functions(t *testing.T) {
 	r := require.New(t)
 	r.Nil(nil)
@@ -50,18 +53,23 @@ func TestDefaultServer_Functions(t *testing.T) {
 	r.Equal(defaults.ServerAddress, s.Address())
 
 	go func() {
-		err := s.Start()
+		err := s.Serve()
 		r.Error(err)
 		r.Contains(err.Error(), "Server closed")
 	}()
 
 	time.Sleep(100 * time.Millisecond)
 
-	c := http.Client{}
-	resp, err := c.Get("http://" + defaults.ServerAddress + "/")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	url := "http://" + defaults.ServerAddress + "/"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	r.NoError(err)
+	resp, err := http.DefaultClient.Do(req)
 	r.NoError(err)
 	r.Equal(http.StatusOK, resp.StatusCode)
+	_ = resp.Body.Close()
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
 	r.NoError(s.Shutdown(ctx))
 }

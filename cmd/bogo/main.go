@@ -23,8 +23,8 @@ import (
 func main() {
 	showVersion := false
 	showHelp := false
-	var copts string
-	var eopts string
+
+	var copts, eopts string
 
 	opts := common.DefaultOptions()
 
@@ -39,27 +39,32 @@ func main() {
 	getopt.FlagLong(&showHelp, "help", 'h', "show help message")
 
 	getopt.Parse()
+
 	if opts.IsDebug {
 		opts.LogLevel = "debug"
 	}
+
 	if showVersion {
 		fmt.Println("bogo", bogo.Version)
-		return
+		os.Exit(1)
 	}
+
 	if showHelp {
 		fmt.Println("bogo", bogo.Version)
 		getopt.Usage()
-		return
+		os.Exit(1)
 	}
 
 	c, _ := common.NewDefaultContext(&opts)
 	logger := c.Logger()
 
 	var err error
+
 	opts.CheckerOptions, err = common.BuildPluginOptions(copts)
 	if err != nil {
 		logger.Fatal("could not build checker options:", err)
 	}
+
 	opts.ExporterOptions, err = common.BuildPluginOptions(eopts)
 	if err != nil {
 		logger.Fatal("could not build exporter options:", err)
@@ -69,7 +74,8 @@ func main() {
 	run(c, &opts)
 }
 
-// run is the main thread
+// run executes all necessary subroutines and servers, waits until signal, then
+// closes all servers and subroutines.
 func run(c common.Context, opts *common.Options) {
 	logger := c.Logger()
 	if c.Meta() == nil {
@@ -98,8 +104,10 @@ func run(c common.Context, opts *common.Options) {
 	signal.Reset()
 
 	logger.Info("shutting down webserver...")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
+
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Error("could not gracefully shutdown the web server: ", err)
 	}
@@ -116,15 +124,16 @@ func startWebRoutine(c common.Context, opts *common.Options) (meari.Server, erro
 	}
 
 	c.WG().Add(1)
-	go func() {
+	go func() { // nolint
 		defer c.WG().Done()
 
-		err := server.Start()
+		err := server.Serve()
 		if errors.Is(err, http.ErrServerClosed) {
 			logger.Info("webserver closed")
 		} else {
 			logger.Error("unexpected error: ", err)
 		}
 	}()
+
 	return server, nil
 }
