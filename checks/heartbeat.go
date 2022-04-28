@@ -47,7 +47,6 @@ func heartbeatRunner(c common.Context, opts common.PluginOptions, out chan inter
 				break infinite
 			case <-ticker.C:
 				out <- "heartbeat"
-			case <-time.After(checkSleep):
 			}
 		}
 		logger.Infof("%s checker exited", heartbeatChecker)

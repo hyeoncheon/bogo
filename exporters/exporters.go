@@ -33,7 +33,6 @@ func StartAll(c common.Context, opts *common.Options, ch chan interface{}) int {
 	n := 0
 
 	for _, x := range common.Plugins(reflect.TypeOf(&Exporter{})) {
-		x, _ := x.(common.Plugin)
 		if len(opts.Exporters) > 0 && !common.Contains(opts.Exporters, x.Name()) {
 			logger.Debugf("%v is not on the exporter list. skipping...", x.Name())
 			continue //nolint

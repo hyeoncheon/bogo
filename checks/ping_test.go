@@ -2,6 +2,7 @@ package checks
 
 import (
 	"testing"
+	"time"
 
 	"github.com/hyeoncheon/bogo"
 	"github.com/hyeoncheon/bogo/internal/common"
@@ -88,6 +89,24 @@ func TestPingRunner_EmptyTarget(t *testing.T) {
 
 	err := pingRunner(c, o, c.Channel())
 	r.ErrorContains(err, "target string should not be empty")
+}
+
+func TestPingRunner_WrongTarget(t *testing.T) {
+	r := require.New(t)
+
+	opts := common.DefaultOptions()
+	c, _ := common.NewDefaultContext(&opts)
+
+	o := common.PluginOptions{
+		"targets":        []string{"badaddress"},
+		"ping_interval":  []string{"100"},
+		"check_interval": []string{"1"},
+	}
+
+	r.NoError(pingRunner(c, o, c.Channel()))
+	time.Sleep(1100 * time.Millisecond)
+
+	c.Cancel()
 }
 
 func TestPingRunner_InvalidOptionValueCheckInterval(t *testing.T) {

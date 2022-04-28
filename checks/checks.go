@@ -3,13 +3,8 @@ package checks
 
 import (
 	"reflect"
-	"time"
 
 	"github.com/hyeoncheon/bogo/internal/common"
-)
-
-const (
-	checkSleep = 100 * time.Millisecond
 )
 
 // Checker couples the name and the runner of each checker.
@@ -37,7 +32,6 @@ func StartAll(c common.Context, opts *common.Options, ch chan interface{}) int {
 	n := 0
 
 	for _, x := range common.Plugins(reflect.TypeOf(&Checker{})) {
-		x, _ := x.(common.Plugin)
 		if len(opts.Checkers) > 0 && !common.Contains(opts.Checkers, x.Name()) {
 			logger.Debugf("%v is not on the checker list. skipping...", x.Name())
 			continue //nolint

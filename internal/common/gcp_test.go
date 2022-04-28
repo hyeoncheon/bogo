@@ -58,7 +58,7 @@ func TestNewGCEMetaClient_NoGCE(t *testing.T) {
 	// actually this could be separated test but just keep it here
 	m = &GCEClient{Client: nil, logger: nil}
 	res := m.WhereAmI()
-	r.Equal(NOWHERE, res)
+	r.Equal(UNKNOWN, res)
 }
 
 func TestGCEClient_InstanceName(t *testing.T) {
