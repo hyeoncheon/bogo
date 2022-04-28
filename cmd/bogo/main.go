@@ -14,6 +14,7 @@ import (
 	"github.com/hyeoncheon/bogo/checks"
 	"github.com/hyeoncheon/bogo/exporters"
 	"github.com/hyeoncheon/bogo/internal/common"
+	"github.com/hyeoncheon/bogo/internal/defaults"
 	"github.com/hyeoncheon/bogo/meari"
 
 	getopt "github.com/pborman/getopt/v2"
@@ -105,7 +106,8 @@ func run(c common.Context, opts *common.Options) {
 
 	logger.Info("shutting down webserver...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(),
+		defaults.ShutdownTimeoutSec*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {

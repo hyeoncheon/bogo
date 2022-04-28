@@ -30,8 +30,8 @@ type Plugin interface {
 // Plugins returns the plugin list for the given type. All register function
 // of the type which is prefixed with "Register" will executed during the
 // registration.
-func Plugins(t reflect.Type) []interface{} {
-	plugins := [](interface{}){}
+func Plugins(t reflect.Type) []Plugin {
+	plugins := [](Plugin){}
 
 	for i := 0; i < t.NumMethod(); i++ {
 		m := t.Method(i)
@@ -43,7 +43,9 @@ func Plugins(t reflect.Type) []interface{} {
 		y := m.Func.Call([]reflect.Value{reflect.ValueOf(x)})[0].Interface()
 		// fmt.Println("plugin found:", reflect.TypeOf(y), y)
 
-		plugins = append(plugins, y)
+		if plugin, ok := y.(Plugin); ok {
+			plugins = append(plugins, plugin)
+		}
 	}
 
 	return plugins

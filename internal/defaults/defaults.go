@@ -1,5 +1,9 @@
 // Package defaults provides the default values.
 package defaults
 
-// ServerAddress is the default listen address for the webserver.
-const ServerAddress = "127.0.0.1:6090"
+const (
+	// ServerAddress is the default listen address for the webserver.
+	ServerAddress = "127.0.0.1:6090"
+	// ShutdownTimeoutSec is the timeout for webserver shutdown in seconds.
+	ShutdownTimeoutSec = 30
+)

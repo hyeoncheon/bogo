@@ -71,11 +71,11 @@ func pingRunner(c common.Context, opts common.PluginOptions, out chan interface{
 					m, err := doPing(host, pingInterval)
 					if err != nil {
 						logger.Error(err)
+						// TODO: sending error message?
 
 						break infinite
 					}
 					out <- m
-				case <-time.After(checkSleep):
 				}
 			}
 			logger.Infof("%s checker for %s exited", pingChecker, host)

@@ -21,6 +21,7 @@ var errUnsupportedMethod = errors.New("unsupported method")
 var (
 	serverOnce sync.Once
 	server     Server
+	serverErr  error // nolint
 )
 
 // Options is a basic structure that contains all options for the Server
@@ -55,17 +56,20 @@ func NewServer(c common.Context, opts *common.Options) (Server, error) {
 		Address: opts.Address,
 	}
 
-	server := NewDefaultServer(serverOpts)
+	serverOnce.Do(func() {
+		server = NewDefaultServer(serverOpts)
+		serverErr = nil
 
-	for p, handler := range handlers.AllHandlers() {
-		switch handler.Method {
-		case http.MethodGet:
-			logger.Debugf("register handler for 'GET %v'...", p)
-			server.GET(p, handler.Handler)
-		default:
-			return nil, fmt.Errorf("%w: %v", errUnsupportedMethod, handler)
+		for p, handler := range handlers.AllHandlers() {
+			switch handler.Method {
+			case http.MethodGet:
+				logger.Debugf("register handler for 'GET %v'...", p)
+				server.GET(p, handler.Handler)
+			default:
+				serverErr = fmt.Errorf("%w: %v", errUnsupportedMethod, handler)
+			}
 		}
-	}
+	})
 
-	return server, nil
+	return server, serverErr
 }

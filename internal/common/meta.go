@@ -1,13 +1,13 @@
 package common
 
 const (
-	// NOWHERE is a kind of "I don't care" from the perspective of a specific
-	// driver. For example, GCE meta client can answer with NOWHERE if they
+	// UNKNOWN is a kind of "I don't know" from the perspective of a specific
+	// driver. For example, GCE meta client can answer with UNKNOWN if they
 	// could not detect as they are on GCE.
-	NOWHERE = "Nowhere"
-	// UNKNOWN has different meaning. For example, if this keyword is used,
-	// it should indicate that the environment is explicitly not supported.
 	UNKNOWN = "Unknown"
+	// NOWHERE has different meaning. For example, if this keyword is used,
+	// it should indicate that the environment is explicitly not supported.
+	NOWHERE = "Nowhere"
 )
 
 // MetaClient is an interface to be implemented for each cloud provider.

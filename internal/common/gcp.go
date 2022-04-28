@@ -60,7 +60,7 @@ func (m *GCEClient) WhereAmI() string {
 		return GOOGLE
 	}
 
-	return NOWHERE
+	return UNKNOWN
 }
 
 // gceMetaInstanceName is a function pointer to metadata.InstanceName().

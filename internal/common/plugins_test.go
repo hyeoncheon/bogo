@@ -12,17 +12,14 @@ func TestPlugins(t *testing.T) {
 	r := require.New(t)
 
 	plugins := Plugins(reflect.TypeOf(&Plugger{}))
-	r.IsType([]interface{}{}, plugins)
 	r.NotEmpty(plugins)
 	r.Equal(2, len(plugins))
 
-	e1 := plugins[0].(Plugin)
-	r.IsType(&Plugger{}, e1)
+	e1 := plugins[0]
 	r.Equal("dummy", e1.Name())
 	r.Nil(e1.Run(nil, nil, nil))
 
-	e2 := plugins[1].(Plugin)
-	r.IsType(&Plugger{}, e2)
+	e2 := plugins[1]
 	r.Equal("mummy", e2.Name())
 	r.Error(e2.Run(nil, nil, nil))
 }
