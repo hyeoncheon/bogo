@@ -129,6 +129,8 @@ func startWebRoutine(c common.Context, opts *common.Options) (meari.Server, erro
 	go func() { // nolint
 		defer c.WG().Done()
 
+		logger.Info("starting webserver on %s...", server.Address())
+
 		err := server.Serve()
 		if errors.Is(err, http.ErrServerClosed) {
 			logger.Info("webserver closed")
