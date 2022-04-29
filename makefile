@@ -22,3 +22,9 @@ lint-hard:
 
 test:
 	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+build:
+	go build -o bogo ./cmd/bogo/
+	strip bogo
+	./bogo -v version
+

@@ -6,7 +6,10 @@
 [![Coverage Status](https://coveralls.io/repos/github/hyeoncheon/bogo/badge.svg?branch=main)](https://coveralls.io/github/hyeoncheon/bogo?branch=main)
 [![Maintainability](https://api.codeclimate.com/v1/badges/1a36b1292948783341d0/maintainability)](https://codeclimate.com/github/hyeoncheon/bogo/maintainability)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hyeoncheon/bogo)](https://goreportcard.com/report/github.com/hyeoncheon/bogo)
-[![Go Reference](https://pkg.go.dev/badge/github.com/hyeoncheon/bogo.svg)](https://pkg.go.dev/github.com/hyeoncheon/bogo)
+[![Go Reference](https://img.shields.io/badge/go-reference-blue)](https://pkg.go.dev/github.com/hyeoncheon/bogo)
+
+[![GitHub license](https://img.shields.io/github/license/hyeoncheon/bogo)](https://github.com/hyeoncheon/bogo/blob/main/LICENSE.md)
+
 
 Bogo is an event collector and reporter for the Hyeoncheon project.cw
 It will be a successor of Kyeong which was ruby based event collector.

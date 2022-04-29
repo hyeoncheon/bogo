@@ -47,13 +47,13 @@ func main() {
 
 	if showVersion {
 		fmt.Println("bogo", bogo.Version)
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	if showHelp {
 		fmt.Println("bogo", bogo.Version)
 		getopt.Usage()
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	c, _ := common.NewDefaultContext(&opts)
