@@ -2,9 +2,11 @@ package exporters
 
 import (
 	"context"
+	"net"
 	"sync"
 	"testing"
 
+	"github.com/hyeoncheon/bogo"
 	"github.com/hyeoncheon/bogo/internal/common"
 
 	"github.com/stretchr/testify/require"
@@ -62,4 +64,22 @@ func TestStackdriverRunner_OnGCE(t *testing.T) {
 
 	r.Error(stackdriverRunner(c, o, c.Channel()))
 	c.Cancel()
+}
+
+func TestRecordPingMessage(t *testing.T) {
+	r := require.New(t)
+	r.NoError(recordPingMessage(&reporter{
+		instanceName: "instance",
+		externalIP:   "ipaddress",
+		zone:         "here",
+	}, &bogo.PingMessage{
+		Addr:   "localhost",
+		IPAddr: &net.IPAddr{},
+		Count:  10,
+		Loss:   10,
+		MinRtt: 10,
+		MaxRtt: 10,
+		AvgRtt: 10,
+		StdDev: 10,
+	}))
 }
