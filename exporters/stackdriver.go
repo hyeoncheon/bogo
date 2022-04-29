@@ -18,6 +18,7 @@ const (
 	stackdriverMetricPrefix     = "custom.googleapis.com/bogo"
 	stackdriverExporter         = "stackdriver"
 	stackdriverExporterInterval = 1 * time.Minute
+	recordTimeout               = 30 * time.Second
 )
 
 // RegisterStackdriver returns a new Exporter and it is used by StartAll().
@@ -103,7 +104,7 @@ func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interfa
 func getReporter(c common.Context) (*reporter, error) {
 	// currently, stackdriver exporter is only suppored on the GCE instance
 	meta := c.Meta()
-	if meta == nil || meta.WhereAmI() != "Google" {
+	if meta == nil || meta.WhereAmI() != common.GOOGLE {
 		return nil, common.ErrNotOnGCE
 	}
 
@@ -170,7 +171,10 @@ func createAndStartExporter() (*stackdriver.Exporter, error) {
 
 // recordPingMessage sends the given ping message to the Cloud Monitoring.
 func recordPingMessage(r *reporter, m *bogo.PingMessage) error {
-	if err := stats.RecordWithTags(context.Background(),
+	ctx, cancel := context.WithTimeout(context.Background(), recordTimeout)
+	defer cancel()
+
+	if err := stats.RecordWithTags(ctx,
 		[]tag.Mutator{
 			tag.Upsert(tag.MustNewKey("node"), r.instanceName),
 			tag.Upsert(tag.MustNewKey("addr"), r.externalIP),
