@@ -4,5 +4,5 @@ package bogo
 // constants: name and version of the application.
 const (
 	Name    = "bogo"
-	Version = "v0.4.0"
+	Version = "v0.4.1"
 )

@@ -1,15 +1,12 @@
 package exporters
 
 import (
-	"time"
-
 	"github.com/hyeoncheon/bogo"
 	"github.com/hyeoncheon/bogo/internal/common"
 )
 
 const (
-	stdoutExporter         = "stdout"
-	stdoutExporterInterval = 1 * time.Minute
+	stdoutExporter = "stdout"
 )
 
 // RegisterStdout returns a new Exporter and it is used by StartAll().
@@ -29,9 +26,6 @@ func stdoutRunner(c common.Context, _ common.PluginOptions, in chan interface{})
 	c.WG().Add(1)
 	go func() { //nolint
 		defer c.WG().Done()
-
-		ticker := time.NewTicker(stdoutExporterInterval)
-		defer ticker.Stop()
 
 	infinite:
 		for {
