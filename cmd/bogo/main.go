@@ -31,7 +31,7 @@ func main() {
 
 	getopt.FlagLong(&copts, "copts", 0, "checker options")
 	getopt.FlagLong(&eopts, "eopts", 0, "exporter options")
-	getopt.FlagLong(&opts.Checkers, "checker", 'c', "set checker")
+	getopt.FlagLong(&opts.Checkers, "checkers", 'c', "set checkers")
 	getopt.FlagLong(&opts.Exporters, "exporter", 'e', "set exporter")
 	getopt.FlagLong(&opts.Address, "address", 'a', "webserver's listen address")
 	getopt.FlagLong(&opts.LogLevel, "log", 'l', "log level. (debug, info, warn, or error)")
@@ -129,7 +129,7 @@ func startWebRoutine(c common.Context, opts *common.Options) (meari.Server, erro
 	go func() { // nolint
 		defer c.WG().Done()
 
-		logger.Info("starting webserver on %s...", server.Address())
+		logger.Infof("starting webserver on %s...", server.Address())
 
 		err := server.Serve()
 		if errors.Is(err, http.ErrServerClosed) {

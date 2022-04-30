@@ -32,6 +32,16 @@ func StartAll(c common.Context, opts *common.Options, ch chan interface{}) int {
 	logger := c.Logger().WithField("module", "exporter")
 	n := 0
 
+	// TODO: oh! this is design issue.
+	// currently there is only one channel and exporters will pick the message in
+	// random order. limiting only one exporter should be run at the same time, but
+	// could be improved by chaining the interface if it is required.
+	if len(opts.Exporters) != 1 {
+		logger.Error("only one exporter is supported!")
+
+		return n
+	}
+
 	for _, x := range common.Plugins(reflect.TypeOf(&Exporter{})) {
 		if len(opts.Exporters) > 0 && !common.Contains(opts.Exporters, x.Name()) {
 			logger.Debugf("%v is not on the exporter list. skipping...", x.Name())

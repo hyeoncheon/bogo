@@ -26,3 +26,16 @@ func TestStartAll(t *testing.T) {
 
 	ctx.Cancel()
 }
+
+func TestStartAll_MoreThanOne(t *testing.T) {
+	r := require.New(t)
+	opts := common.DefaultOptions()
+	opts.Exporters = []string{"stdout", "stackdriver"}
+	opts.ExporterOptions = map[string]common.PluginOptions{}
+	ctx, _ := common.NewDefaultContext(&opts)
+
+	n := StartAll(ctx, &opts, ctx.Channel())
+	r.Equal(0, n)
+
+	ctx.Cancel()
+}

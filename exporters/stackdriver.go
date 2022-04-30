@@ -15,10 +15,9 @@ import (
 )
 
 const (
-	stackdriverMetricPrefix     = "custom.googleapis.com/bogo"
-	stackdriverExporter         = "stackdriver"
-	stackdriverExporterInterval = 1 * time.Minute
-	recordTimeout               = 30 * time.Second
+	stackdriverMetricPrefix = "custom.googleapis.com/bogo"
+	stackdriverExporter     = "stackdriver"
+	recordTimeout           = 30 * time.Second
 )
 
 // RegisterStackdriver returns a new Exporter and it is used by StartAll().
@@ -65,9 +64,6 @@ func stackdriverRunner(c common.Context, _ common.PluginOptions, in chan interfa
 	c.WG().Add(1)
 	go func() { //nolint
 		defer c.WG().Done()
-
-		ticker := time.NewTicker(stackdriverExporterInterval)
-		defer ticker.Stop()
 
 		// defer for exporter
 		defer exporter.Flush()
