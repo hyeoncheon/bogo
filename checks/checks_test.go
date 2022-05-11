@@ -1,7 +1,6 @@
 package checks
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/hyeoncheon/bogo/internal/common"
@@ -44,6 +43,4 @@ func TestStartAll_Error(t *testing.T) {
 
 	n := StartAll(ctx, &opts, ctx.Channel())
 	r.Equal(0, n)
-
-	r.Equal("--- &{{} [0 0 0]}", fmt.Sprintf("--- %v", ctx.WG()))
 }
