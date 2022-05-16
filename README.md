@@ -1,6 +1,6 @@
 # Bogo, a looking glass for Hyeoncheon
 
-[![Test](https://github.com/hyeoncheon/bogo/actions/workflows/test.yml/badge.svg)](https://github.com/hyeoncheon/bogo/actions/workflows/test.yml)
+[![Standard Test](https://github.com/hyeoncheon/bogo/actions/workflows/standard-go-test.yml/badge.svg)](https://github.com/hyeoncheon/bogo/actions/workflows/standard-go-test.yml)
 [![DeepSource](https://deepsource.io/gh/hyeoncheon/bogo.svg/?label=active+issues&token=suXiU-8eOt2HTIniLbcCLbq2)](https://deepsource.io/gh/hyeoncheon/bogo/?ref=repository-badge)
 [![codecov](https://codecov.io/gh/hyeoncheon/bogo/branch/main/graph/badge.svg?token=TkcqVhww7F)](https://codecov.io/gh/hyeoncheon/bogo)
 [![Coverage Status](https://coveralls.io/repos/github/hyeoncheon/bogo/badge.svg?branch=main)](https://coveralls.io/github/hyeoncheon/bogo?branch=main)
