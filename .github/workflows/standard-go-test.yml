@@ -8,11 +8,11 @@ on:
 jobs:
   call-standard-test:
     name: Standard Test
-    uses: hyeoncheon/.github/.github/workflows/go-test.yml@main
+    uses: hyeoncheon/.github/.github/workflows/go-test.yml@latest
     secrets: inherit
 
   call-standard-coverage:
     needs: [ call-standard-test ]
     name: Standard Coverage
-    uses: hyeoncheon/.github/.github/workflows/go-coverage.yml@main
+    uses: hyeoncheon/.github/.github/workflows/go-coverage.yml@latest
     secrets: inherit
